@@ -310,7 +310,6 @@
         }
 
         async function startRound() {
-            // ... (existing startRound code, unchanged) ...
             if (gameState.isGameOver) return;
             
             logMessage(`--- Round ${gameState.round} Begins ---`);
@@ -331,7 +330,7 @@
             const otherSection = gameState.currentSection === 'A' ? 'B' : 'A';
             $(`#teamsContainer${otherSection}`).classList.remove('active-section');
             
-            $('#auctionStatus').innerHTML = `<p class="text-gray-400 text-lg">Waiting for Section ${gameState.currentSection} to make their picks...</p>`;
+            $('#auctionArea').innerHTML = `<p id="auctionStatus" class="text-gray-400 text-lg">Waiting for Section ${gameState.currentSection} to make their picks...</p>`;
 
             // Reset picks for all teams in the current section
             teams.forEach(team => {
@@ -861,7 +860,16 @@
         }
         
         // --- TUTORIAL LOGIC (unchanged) ---
-        // ... (all existing tutorial functions: tutorialSteps, startTutorial, runTutorialStep, etc.) ...
+        function startTutorial() {
+            // This function is not fully implemented in the provided code.
+            // A placeholder to prevent errors if called.
+            console.log("Tutorial started");
+            showInfoModal("Tutorial", "The tutorial feature is not yet fully implemented.");
+        }
+
+        function runTutorialStep() {
+            // Placeholder
+        }
         
         // --- GEMINI API INTEGRATION ---
 
@@ -1052,6 +1060,5 @@
     </script>
 </body>
 </html>
-
 
 

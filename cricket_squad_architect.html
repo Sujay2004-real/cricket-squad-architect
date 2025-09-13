@@ -354,16 +354,21 @@
         }
 
         function getTeamPick(team) {
-            // ... (existing getTeamPick code, unchanged) ...
-             return new Promise(resolve => {
+            return new Promise((resolve) => {
                 if (team.isCPU) {
                     setTimeout(() => {
-                        team.pick = generateCpuPick(team);
-                        logMessage(`${team.name} has made its selection.`);
-                        resolve();
+                        try {
+                            team.pick = generateCpuPick(team);
+                            logMessage(`${team.name} has made its selection.`);
+                            resolve();
+                        } catch (error) {
+                            console.error(`Error generating pick for ${team.name}:`, error);
+                            team.pick = null; 
+                            logMessage(`An error occurred for ${team.name}. They will not participate in this round.`, 'red');
+                            resolve(); // IMPORTANT: Resolve even on error to prevent the game from hanging.
+                        }
                     }, Math.random() * 2000 + 1000);
                 } else {
-                    // This promise is resolved when the user clicks the submit button
                     enablePlayerInput(resolve);
                 }
             });
@@ -784,12 +789,16 @@
         }
 
         function logMessage(message, color = 'gray') {
-            // ... (existing logMessage code, unchanged) ...
-            const colors = { gray: 'text-gray-400', gold: 'text-yellow-400', green: 'text-green-400', };
+            const colors = {
+                gray: 'text-gray-400',
+                gold: 'text-yellow-400',
+                green: 'text-green-400',
+                red: 'text-red-400'
+            };
             const logEntry = document.createElement('p');
-            logEntry.className = ` ${colors[color]} anote`;
+            logEntry.className = ` ${colors[color] || colors['gray']} anote`;
             logEntry.textContent = message;
-            
+
             const logContainer = $('#gameLog');
             logContainer.appendChild(logEntry);
             logContainer.scrollTop = logContainer.scrollHeight;
@@ -1043,4 +1052,6 @@
     </script>
 </body>
 </html>
+
+
 

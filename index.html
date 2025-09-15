@@ -45,37 +45,6 @@
         .modal-content {
             z-index: 50;
         }
-        .tutorial-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .tutorial-box {
-            background: #1f2937;
-            padding: 2rem;
-            border-radius: 1rem;
-            color: white;
-            max-width: 500px;
-            text-align: center;
-            position: relative;
-            border: 1px solid #374151;
-        }
-        .highlight-element {
-            position: absolute;
-            border: 3px solid #3b82f6;
-            border-radius: 8px;
-            box-shadow: 0 0 20px #3b82f6;
-            z-index: 1000;
-            pointer-events: none;
-            transition: all 0.3s ease-in-out;
-        }
         .loader {
             border: 4px solid #f3f3f3;
             border-radius: 50%;
@@ -87,6 +56,22 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        .rules-content h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #60a5fa; /* text-blue-400 */
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .rules-content p {
+            margin-bottom: 0.5rem;
+        }
+         .rules-content ul {
+            list-style-position: inside;
+            list-style-type: disc;
+            padding-left: 0.5rem;
+            margin-bottom: 1rem;
         }
     </style>
 </head>
@@ -105,7 +90,7 @@
                 </div>
                 <button id="startGameBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md mt-6 transition duration-300">Start New Game</button>
                 <button id="viewLastGameBtn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-md mt-3 transition duration-300">View Last Game</button>
-                 <button id="tutorialBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md mt-3 transition duration-300">How to Play (Tutorial)</button>
+                 <button id="rulesBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md mt-3 transition duration-300">Game Rules</button>
             </div>
         </div>
 
@@ -211,16 +196,6 @@
         </div>
     </div>
 
-    <!-- Tutorial Overlay -->
-    <div id="tutorialOverlay" class="hidden tutorial-overlay">
-        <div class="tutorial-box">
-            <h2 id="tutorialTitle" class="text-3xl font-bold text-blue-400 mb-4">Welcome to the Tutorial!</h2>
-            <p id="tutorialText" class="mb-6">This will guide you through the basics of Cricket Squad Architect.</p>
-            <button id="tutorialNextBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md">Start</button>
-        </div>
-    </div>
-    <div id="highlightBox" class="highlight-element hidden"></div>
-
     <script type="module">
         // --- GAME CONFIGURATION ---
         const CONFIG = {
@@ -268,7 +243,6 @@
 
         // --- CORE GAME LOGIC ---
         function initGame() {
-            // ... (existing initGame code, unchanged) ...
             gameState = {
                 round: 1,
                 turn: 0,
@@ -277,8 +251,6 @@
                 isGameOver: false,
                 gameLog: [],
                 availablePlayers: JSON.parse(JSON.stringify(PLAYER_DATA)),
-                tutorialActive: false,
-                tutorialStep: 0,
             };
             
             teams = [];
@@ -332,19 +304,12 @@
             
             $('#auctionArea').innerHTML = `<p id="auctionStatus" class="text-gray-400 text-lg">Waiting for Section ${gameState.currentSection} to make their picks...</p>`;
 
-            // Reset picks for all teams in the current section
             teams.forEach(team => {
                 if (team.section === gameState.currentSection) {
                     team.pick = null;
                 }
             });
-            
-            if (gameState.tutorialActive) {
-                runTutorialStep();
-                return; // Tutorial will drive the flow
-            }
 
-            // Get picks from all teams in the section
             const pickPromises = teamsInPlay.map(team => getTeamPick(team));
             await Promise.all(pickPromises);
             
@@ -364,7 +329,7 @@
                             console.error(`Error generating pick for ${team.name}:`, error);
                             team.pick = null; 
                             logMessage(`An error occurred for ${team.name}. They will not participate in this round.`, 'red');
-                            resolve(); // IMPORTANT: Resolve even on error to prevent the game from hanging.
+                            resolve();
                         }
                     }, Math.random() * 2000 + 1000);
                 } else {
@@ -374,7 +339,6 @@
         }
 
         function enablePlayerInput(resolve) {
-            // ... (existing enablePlayerInput code, unchanged) ...
             $('#playerInputArea').classList.remove('hidden');
             $('#submitPickBtn').onclick = () => {
                 const slab = $('#slabSelect').value;
@@ -382,7 +346,6 @@
                 const max = PLAYER_DATA[slab].length;
 
                 if (isNaN(number) || number < 1 || number > max) {
-                    // Using a custom modal instead of alert
                     showInfoModal("Invalid Input", `Please enter a valid number between 1 and ${max}.`);
                     return;
                 }
@@ -396,6 +359,7 @@
             
             $('#slabSelect').onchange = updateNumberRange;
             updateNumberRange();
+            
             startTimer($('#timerBar'), CONFIG.DECISION_TIMER_SECONDS, () => {
                 logMessage(`Time's up! A random pick was made for you.`);
                 teams[0].pick = generateRandomPick();
@@ -405,7 +369,6 @@
         }
         
         function generateRandomPick() {
-            // ... (existing generateRandomPick code, unchanged) ...
             const slabs = ['gold', 'silver', 'bronze'];
             const slab = slabs[Math.floor(Math.random() * slabs.length)];
             const max = PLAYER_DATA[slab].length;
@@ -414,13 +377,12 @@
         }
 
         function generateCpuPick(team) {
-            // ... (existing generateCpuPick code, unchanged) ...
             let slab;
             const rand = Math.random();
             if (team.purse > CONFIG.INITIAL_PURSE * 0.7 && rand < 0.5) {
-                slab = 'gold'; // Aggressive Bidder
+                slab = 'gold';
             } else if (team.purse < CONFIG.INITIAL_PURSE * 0.3 && rand < 0.6) {
-                slab = 'bronze'; // Budget-Conscious
+                slab = 'bronze';
             } else {
                 slab = 'silver';
             }
@@ -437,7 +399,6 @@
         }
 
         async function processRoundPicks() {
-            // ... (existing processRoundPicks code, unchanged) ...
              const picks = teams
                 .filter(t => t.section === gameState.currentSection && t.pick)
                 .map(t => ({ teamId: t.id, ...t.pick }));
@@ -466,7 +427,6 @@
         }
 
         async function handleAuction(picks, slab) {
-            // ... (existing handleAuction code, unchanged) ...
             logMessage(`Auctioning from the ${slab.toUpperCase()} slab.`);
             const availableSlabPlayers = gameState.availablePlayers[slab];
             if(availableSlabPlayers.length === 0) {
@@ -501,7 +461,6 @@
         }
         
         async function runBiddingProcess(priorityList, player) {
-            // ... (existing runBiddingProcess code, unchanged) ...
             if (priorityList.length === 0) {
                 logMessage("No teams on priority list. Player not sold.");
                 return;
@@ -593,7 +552,6 @@
         }
         
         function getTeamDecision(team, player, prompt, options) {
-            // ... (existing getTeamDecision code, unchanged) ...
             if (options.includes('Reject') && team.consecutiveRejections >= 2) {
                 logMessage(`FORCED PICK! ${team.name} cannot reject ${player.name}.`);
                 return Promise.resolve(true); // Must accept
@@ -607,7 +565,6 @@
         }
         
         function cpuMakeDecision(team, player, options) {
-            // ... (existing cpuMakeDecision code, unchanged) ...
             const willAccept = Math.random() > 0.3;
             if(options[0] === 'Challenge') return Math.random() > 0.5;
             if(options[0] === 'Match Bid') return team.purse > 15 && Math.random() > 0.4;
@@ -615,7 +572,6 @@
         }
 
         async function getBidAmount(team, player) {
-            // ... (existing getBidAmount code, unchanged) ...
             if (team.isCPU) {
                 const bidPercentage = team.purse > 50 ? 0.15 : 0.08;
                 return Promise.resolve(Math.round((team.purse * bidPercentage) * 10) / 10);
@@ -631,7 +587,6 @@
         }
 
         async function awardPlayer(team, player, price) {
-            // ... (existing awardPlayer code, unchanged) ...
             if (team.purse < price) {
                 logMessage(`${team.name} cannot afford $${price}M for ${player.name}. Sale cancelled.`);
                 return;
@@ -651,7 +606,6 @@
         }
 
         function endRound() {
-            // ... (existing endRound code, unchanged) ...
             gameState.isRoundInProgress = false;
             
             const isEveryTeamFull = teams.every(t => t.squad.length >= CONFIG.SLOTS_PER_TEAM);
@@ -669,7 +623,6 @@
         }
 
         function endGame() {
-            // ... (existing endGame code, unchanged) ...
             gameState.isGameOver = true;
             logMessage(`--- GAME OVER ---`);
             $('#gameScreen').classList.add('hidden');
@@ -683,12 +636,10 @@
 
         // --- UI & RENDERING ---
         function renderAllTeams() {
-            // ... (existing renderAllTeams code, unchanged) ...
             teams.forEach(team => renderTeam(team.id));
         }
         
         function renderTeam(teamId) {
-            // ... (existing renderTeam code, unchanged) ...
             const team = teams[teamId];
             const teamDiv = $(`#team-${teamId}`);
             if (teamDiv) teamDiv.remove();
@@ -713,7 +664,6 @@
         }
         
         function renderPlayerCard(player, title) {
-            // ... (existing renderPlayerCard code, unchanged) ...
             const premiumBadge = player.premium ? '<span class="absolute top-2 right-2 text-xs bg-purple-600 px-2 py-1 rounded-full font-bold shadow-lg">PREMIUM</span>' : '';
             return `
                 <div class="player-card relative bg-gray-700 p-6 rounded-lg shadow-xl border-2 ${player.slab === 'gold' ? 'border-yellow-500' : player.slab === 'silver' ? 'border-gray-400' : 'border-yellow-700'} w-full max-w-sm fade-in">
@@ -755,7 +705,6 @@
                     `;
                 });
                 html += '</ul>';
-                // Only add analysis button for the main game over screen
                 if (containerId === 'finalSquads') {
                     html += `
                         <button class="ai-analysis-btn w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold py-2 px-4 rounded-md transition duration-300" data-team-index="${index}">✨ Get AI Squad Analysis</button>
@@ -773,14 +722,12 @@
         }
 
         function updatePurseDisplay(teamId) {
-            // ... (existing updatePurseDisplay code, unchanged) ...
             if (teamId === 0) {
                 $('#userPurse').textContent = `Purse: $${teams[0].purse.toFixed(1)}M`;
             }
         }
         
         function updateNumberRange() {
-            // ... (existing updateNumberRange code, unchanged) ...
             const slab = $('#slabSelect').value;
             const max = PLAYER_DATA[slab].length;
             $('#numberRange').textContent = `1 - ${max}`;
@@ -805,7 +752,6 @@
         }
         
         function startTimer(barElement, seconds, onEnd) {
-            // ... (existing startTimer code, unchanged) ...
             clearInterval(timerInterval);
             let width = 100;
             const decrement = 100 / (seconds * 10);
@@ -820,7 +766,6 @@
         }
 
         function showModalPrompt(text, options, showBidInput = false) {
-            // ... (existing showModalPrompt code, slightly modified for new structure) ...
             return new Promise(resolve => {
                 const modalContent = `
                     <h3 id="modalTitle" class="text-2xl font-bold mb-4">${teams[0].name}</h3>
@@ -858,27 +803,49 @@
                 });
             });
         }
-        
-        // --- TUTORIAL LOGIC (unchanged) ---
-        function startTutorial() {
-            // This function is not fully implemented in the provided code.
-            // A placeholder to prevent errors if called.
-            console.log("Tutorial started");
-            showInfoModal("Tutorial", "The tutorial feature is not yet fully implemented.");
-        }
 
-        function runTutorialStep() {
-            // Placeholder
+        function showRulesModal() {
+            const rulesHtml = `
+                <h3 class="text-2xl font-bold mb-4">Game Rules</h3>
+                <div class="text-left text-gray-300 max-h-[60vh] overflow-y-auto pr-4 rules-content">
+                    <h3>The Objective</h3>
+                    <p>Your goal is to build a full squad of <strong>${CONFIG.SLOTS_PER_TEAM} players</strong> by participating in a multi-round draft and auction, all while managing your starting purse of <strong>$${CONFIG.INITIAL_PURSE}M</strong>.</p>
+                    
+                    <h3>The Draft</h3>
+                    <p>The game consists of 10 teams, split into two sections (A and B). The draft proceeds in rounds, alternating between each section.</p>
+                    
+                    <h3>Making a Pick</h3>
+                    <p>When it's your section's turn, you must select:</p>
+                    <ul>
+                        <li><strong>A Player Slab:</strong> Gold (highest tier), Silver, or Bronze.</li>
+                        <li><strong>A Number:</strong> A number corresponding to a player's rank within their original slab.</li>
+                    </ul>
+
+                    <h3>The Auction</h3>
+                    <p>After all teams in a section submit their pick, the auction begins for the highest-priority slab chosen (Gold > Silver > Bronze).</p>
+                    <ul>
+                        <li><strong>Random Player:</strong> The system secretly generates a random number (<em>randgen</em>) and reveals the corresponding player from that slab.</li>
+                        <li><strong>Priority List:</strong> The <strong>3 teams</strong> whose chosen number is mathematically closest to the <em>randgen</em> make it to the priority list.</li>
+                        <li><strong>Bidding & Challenges:</strong> The team with the highest priority gets the first chance to accept the player for free. If they do, other teams on the priority list can challenge with a bid. If they reject, the next team in line gets their chance.</li>
+                    </ul>
+
+                    <h3>Special Rules</h3>
+                    <ul>
+                        <li><strong>Exact Match:</strong> If your chosen number is an EXACT match to the <em>randgen</em>, you acquire the player instantly for free. No one can challenge you!</li>
+                        <li><strong>Forced Pick:</strong> If you reject players in two consecutive turns where you are on the priority list, you may be forced to accept the player on your third consecutive turn to prevent stalling.</li>
+                    </ul>
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button id="modal-close-btn" class="px-6 py-2 rounded-md font-semibold transition bg-blue-600 hover:bg-blue-700">Got It!</button>
+                </div>
+            `;
+            $('#modal-content-container').innerHTML = rulesHtml;
+            $('#modal').classList.remove('hidden');
+            $('#modal').classList.add('flex');
+            $('#modal-close-btn').onclick = hideModal;
         }
         
         // --- GEMINI API INTEGRATION ---
-
-        /**
-         * Calls the Gemini API with a given prompt.
-         * @param {string} prompt - The prompt to send to the API.
-         * @param {boolean} expectJson - Whether to expect a JSON response.
-         * @returns {Promise<string|null>} The text response from the API or null on error.
-         */
         async function callGeminiApi(prompt, expectJson = false) {
             const apiKey = ""; // API key is handled by the execution environment
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
@@ -1009,7 +976,6 @@
                 showInfoModal("Team Name Required", "Please enter a team name to start the game.");
                 return;
             }
-            gameState.tutorialActive = false;
             initGame();
         });
         
@@ -1029,13 +995,7 @@
             $('#homeScreen').classList.remove('hidden');
         });
         
-        $('#tutorialBtn').addEventListener('click', () => {
-            if (!$('#teamNameInput').value) {
-                showInfoModal("Team Name Required", "Please enter a team name before starting the tutorial.");
-                return;
-            }
-            startTutorial();
-        });
+        $('#rulesBtn').addEventListener('click', showRulesModal);
 
         $('#suggestNameBtn').addEventListener('click', async () => {
             showLoadingModal("✨ Generating creative team names...");
@@ -1051,14 +1011,13 @@
                     showInfoModal("Error", "Sorry, there was an issue getting suggestions.");
                 }
             }
-            // Error is handled inside callGeminiApi by showing a modal
         });
-
 
         // --- INITIALIZATION ---
         generatePlayers();
     </script>
 </body>
 </html>
+
 
 

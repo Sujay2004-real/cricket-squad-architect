@@ -3,6 +3,7 @@ var firebaseConfig = {
   authDomain: "YOUR_AUTH_DOMAIN",
   projectId: "YOUR_PROJECT_ID",
   storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  messagingSenderId: "YOUR_MESSAGING_SSENDER_ID",
+  appId: "YOUR_APP_ID",
+  geminiApiKey: "YOUR_GEMINI_API_KEY"
 };

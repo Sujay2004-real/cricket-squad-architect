@@ -73,6 +73,15 @@
             padding-left: 0.5rem;
             margin-bottom: 1rem;
         }
+        .game-key {
+            font-family: monospace;
+            font-size: 2.5rem;
+            letter-spacing: 0.2em;
+            background-color: #111827;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 2px dashed #374151;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -92,12 +101,101 @@
                 <button id="viewLastGameBtn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-md mt-3 transition duration-300">View Last Game</button>
                  <button id="rulesBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md mt-3 transition duration-300">Game Rules</button>
             </div>
+             <p class="text-xs text-gray-500 mt-4">User ID: <span id="userIdDisplay"></span></p>
         </div>
+
+        <!-- Host Game Setup Screen -->
+        <div id="hostGameSetupScreen" class="hidden min-h-screen flex flex-col items-center p-4">
+            <h1 class="text-4xl font-bold text-blue-400 my-6">Host a New Online Game</h1>
+            <div class="w-full max-w-6xl mx-auto bg-gray-800 p-8 rounded-lg shadow-2xl">
+                <!-- Game Settings -->
+                <h2 class="text-2xl font-bold mb-4 text-blue-300 border-b border-gray-700 pb-2">1. Game Settings</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div>
+                        <label for="maxTeamsInput" class="block text-sm font-medium text-gray-300 mb-2">Max Teams</label>
+                        <input type="number" id="maxTeamsInput" value="10" class="w-full bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-white">
+                    </div>
+                    <div>
+                        <label for="slotsPerTeamInput" class="block text-sm font-medium text-gray-300 mb-2">Player Slots per Team</label>
+                        <input type="number" id="slotsPerTeamInput" value="11" class="w-full bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-white">
+                    </div>
+                    <div>
+                        <label for="maxPurseInput" class="block text-sm font-medium text-gray-300 mb-2">Starting Purse (in Millions)</label>
+                        <input type="number" id="maxPurseInput" value="100" class="w-full bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-white">
+                    </div>
+                </div>
+
+                <!-- Slab Creator -->
+                 <h2 class="text-2xl font-bold mb-4 text-blue-300 border-b border-gray-700 pb-2">2. Create Player Slabs</h2>
+                 <div class="flex gap-4 items-end mb-4">
+                    <div class="flex-grow">
+                        <label for="slabNameInput" class="block text-sm font-medium text-gray-300 mb-1">New Slab Name</label>
+                        <input type="text" id="slabNameInput" placeholder="e.g., Marquee, Uncapped" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                    </div>
+                    <button id="addSlabBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-md">Add Slab</button>
+                 </div>
+                 <div id="slabList" class="flex flex-wrap gap-2 mb-8">
+                    <!-- Slabs will be added here -->
+                 </div>
+
+                <!-- Player Creator -->
+                <h2 class="text-2xl font-bold mb-4 text-blue-300 border-b border-gray-700 pb-2">3. Add Players to Draft Pool</h2>
+                <div class="bg-gray-700/50 p-4 rounded-lg flex flex-col md:flex-row gap-4 items-end">
+                    <div class="flex-grow w-full">
+                        <label for="playerNameInput" class="block text-sm font-medium text-gray-300 mb-1">Player Name</label>
+                        <input type="text" id="playerNameInput" placeholder="e.g., Virat Kohli" class="w-full bg-gray-600 border border-gray-500 rounded-md px-3 py-2 text-white">
+                    </div>
+                    <div class="flex-grow w-full">
+                        <label for="playerSlabSelect" class="block text-sm font-medium text-gray-300 mb-1">Slab</label>
+                        <select id="playerSlabSelect" class="w-full bg-gray-600 border border-gray-500 rounded-md px-3 py-2 text-white">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div class="flex-grow w-full">
+                        <label for="playerPerkInput" class="block text-sm font-medium text-gray-300 mb-1">Perk / Ability</label>
+                         <input type="text" id="playerPerkInput" placeholder="e.g., Master Finisher" class="w-full bg-gray-600 border border-gray-500 rounded-md px-3 py-2 text-white">
+                    </div>
+                    <button id="addPlayerBtn" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-md transition duration-300 flex-shrink-0">Add Player</button>
+                </div>
+
+                <!-- Player List -->
+                <div id="customPlayerListContainer" class="mt-6 max-h-60 overflow-y-auto pr-2"></div>
+                
+                <!-- Action Buttons -->
+                <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-700">
+                    <button id="backToHomeFromHostBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-md">Back to Menu</button>
+                    <button id="createGameBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md">Create Game & Go to Lobby</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
+            <h1 class="text-4xl font-bold text-blue-400 mb-4">Game Lobby</h1>
+            <p class="text-gray-300 mb-6">Share this key with other players to have them join.</p>
+            <div class="flex items-center gap-4 mb-8">
+                 <p id="gameKeyDisplay" class="game-key">00000</p>
+                 <button id="copyKeyBtn" class="bg-gray-600 hover:bg-gray-700 p-3 rounded-md">Copy</button>
+            </div>
+
+            <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-md">
+                <h2 class="text-2xl font-bold mb-4 text-center">Players in Lobby (<span id="playerCount">1</span>/<span id="maxPlayerCount">10</span>)</h2>
+                <div id="lobbyPlayerList" class="space-y-3">
+                    <!-- Player list populated by JS -->
+                </div>
+                <button id="startGameFromLobbyBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md mt-6 transition duration-300 hidden">Start Game</button>
+                 <button id="leaveLobbyBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-md mt-3 transition duration-300">Leave Lobby</button>
+            </div>
+        </div>
+
 
         <!-- Game Screen -->
         <div id="gameScreen" class="hidden">
             <header class="bg-gray-800 p-3 flex justify-between items-center sticky top-0 z-30 shadow-lg">
-                <h2 class="text-2xl font-bold">Round <span id="roundCounter">1</span></h2>
+                <div class="flex items-center gap-4">
+                    <h2 class="text-2xl font-bold">Round <span id="roundCounter">1</span></h2>
+                    <button id="quitGameBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-300">Quit Game</button>
+                </div>
                 <div class="text-center">
                     <p class="text-lg font-semibold" id="gameStatus">Section A's Turn</p>
                     <p class="text-sm text-gray-400" id="currentPicker">Initializing...</p>
@@ -133,9 +231,7 @@
                             <div>
                                 <label for="slabSelect" class="block text-sm font-medium text-gray-300 mb-2">Choose a Slab</label>
                                 <select id="slabSelect" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                                    <option value="gold">Gold</option>
-                                    <option value="silver">Silver</option>
-                                    <option value="bronze">Bronze</option>
+                                    <!-- Populated by JS -->
                                 </select>
                             </div>
                             <div>
@@ -180,43 +276,40 @@
     <div id="modal" class="hidden fixed inset-0 items-center justify-center modal-backdrop">
         <div class="bg-gray-800 rounded-lg shadow-2xl p-8 w-full max-w-lg modal-content fade-in">
             <div id="modal-content-container">
-                 <h3 id="modalTitle" class="text-2xl font-bold mb-4">Modal Title</h3>
-                <p id="modalText" class="text-gray-300 mb-6">Modal body text goes here.</p>
-                <div id="modalTimer" class="w-full bg-gray-700 rounded-full h-2.5 mb-4 hidden">
-                    <div id="modalTimerBar" class="bg-blue-500 h-2.5 rounded-full timer-bar" style="width: 100%"></div>
-                </div>
-                <div id="modalButtons" class="flex justify-end gap-4">
-                    <!-- Buttons are added dynamically -->
-                </div>
-                <div id="modalBidInputContainer" class="hidden mt-4">
-                    <label for="bidAmount" class="block text-sm font-medium text-gray-300 mb-2">Enter Bid Amount (in Millions)</label>
-                    <input type="number" id="bidAmount" class="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white" placeholder="e.g., 5.5">
-                </div>
+                 <!-- Content dynamically injected -->
             </div>
         </div>
     </div>
 
     <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, serverTimestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
         // --- GAME CONFIGURATION ---
-        const CONFIG = {
+        const DEFAULT_CONFIG = {
             NUM_TEAMS: 10,
-            SLOTS_PER_TEAM: 27, // For testing, a smaller number might be faster, e.g., 5
-            INITIAL_PURSE: 100, // In Millions
+            SLOTS_PER_TEAM: 11,
+            INITIAL_PURSE: 100,
             DECISION_TIMER_SECONDS: 15,
         };
 
         // --- MOCK PLAYER DATA ---
-        const PLAYER_DATA = {
-            gold: [],
-            silver: [],
-            bronze: [],
+        let PLAYER_DATA = {
+            gold: [], silver: [], bronze: [],
         };
+        
+        let customPlayers = [];
+        let customSlabs = [];
+        let tempIdCounter = 0;
         
         // --- UTILITY FUNCTIONS ---
         const $ = (selector) => document.querySelector(selector);
         const $$ = (selector) => document.querySelectorAll(selector);
 
-        function generatePlayers() {
+        function generateDefaultPlayers() {
+            PLAYER_DATA = { gold: [], silver: [], bronze: [] }; // Reset
             const perks = ["Death Overs Specialist", "Power Hitter", "Spin Maestro", "Pace Spearhead", "Master Finisher", "Economical Bowler", "Aggressive Opener"];
             const accomplishments = ["5-Wicket Haul", "Century in T20", "Hat-trick", "Fastest 50", "Most Valuable Player Award"];
             let idCounter = 1;
@@ -240,31 +333,47 @@
         let gameState = {};
         let teams = [];
         let timerInterval;
+        let activeConfig = { ...DEFAULT_CONFIG };
+        let db, auth, userId, gameUnsubscribe;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // --- CORE GAME LOGIC ---
-        function initGame() {
+        function initGame(isCustom = false) {
+             if (isCustom) {
+                // Config from custom screen
+                activeConfig.NUM_TEAMS = parseInt($('#maxTeamsInput').value);
+                activeConfig.SLOTS_PER_TEAM = parseInt($('#slotsPerTeamInput').value);
+                activeConfig.INITIAL_PURSE = parseInt($('#maxPurseInput').value);
+                // Populate PLAYER_DATA from customPlayers list
+                PLAYER_DATA = {};
+                customSlabs.forEach(slab => PLAYER_DATA[slab] = []);
+                let idCounter = 1;
+                customPlayers.forEach(p => {
+                    PLAYER_DATA[p.slab].push({
+                        id: idCounter++, name: p.name, slab: p.slab, perk: p.perk,
+                        accomplishments: 'Custom Player', premium: false
+                    });
+                });
+            } else {
+                // Default game
+                activeConfig = { ...DEFAULT_CONFIG };
+                generateDefaultPlayers();
+            }
+
             gameState = {
-                round: 1,
-                turn: 0,
-                currentSection: 'A',
-                isRoundInProgress: false,
-                isGameOver: false,
-                gameLog: [],
+                round: 1, turn: 0, currentSection: 'A', isRoundInProgress: false,
+                isGameOver: false, gameLog: [],
                 availablePlayers: JSON.parse(JSON.stringify(PLAYER_DATA)),
             };
             
             teams = [];
-            for (let i = 0; i < CONFIG.NUM_TEAMS; i++) {
+            for (let i = 0; i < activeConfig.NUM_TEAMS; i++) {
                 const isCPU = i > 0;
                 teams.push({
-                    id: i,
-                    name: isCPU ? `CPU Team ${i}` : ($('#teamNameInput').value || 'My Team'),
-                    isCPU: isCPU,
-                    section: i < CONFIG.NUM_TEAMS / 2 ? 'A' : 'B',
-                    purse: CONFIG.INITIAL_PURSE,
-                    squad: [],
-                    consecutiveRejections: 0,
-                    pick: null,
+                    id: i, name: isCPU ? `CPU Team ${i+1}` : ($('#teamNameInput').value || 'My Team'),
+                    isCPU: isCPU, section: i < activeConfig.NUM_TEAMS / 2 ? 'A' : 'B',
+                    purse: activeConfig.INITIAL_PURSE, squad: [],
+                    consecutiveRejections: 0, pick: null,
                 });
             }
             
@@ -272,11 +381,9 @@
             updatePurseDisplay(0);
             renderAllTeams();
             
-            $('#homeScreen').classList.add('hidden');
-            $('#lastGameScreen').classList.add('hidden');
-            $('#gameOverScreen').classList.add('hidden');
-            $('#gameScreen').classList.remove('hidden');
+            showScreen('gameScreen');
             $('#gameLog').innerHTML = '';
+            updateSlabSelect();
 
             startRound();
         }
@@ -285,7 +392,7 @@
             if (gameState.isGameOver) return;
             
             logMessage(`--- Round ${gameState.round} Begins ---`);
-            const teamsInPlay = teams.filter(t => t.section === gameState.currentSection && t.squad.length < CONFIG.SLOTS_PER_TEAM);
+            const teamsInPlay = teams.filter(t => t.section === gameState.currentSection && t.squad.length < activeConfig.SLOTS_PER_TEAM);
 
             if (teamsInPlay.length === 0) {
                 logMessage(`No teams in Section ${gameState.currentSection} need players. Skipping.`);
@@ -343,7 +450,11 @@
             $('#submitPickBtn').onclick = () => {
                 const slab = $('#slabSelect').value;
                 const number = parseInt($('#numberInput').value);
-                const max = PLAYER_DATA[slab].length;
+                if (!slab) {
+                    showInfoModal("No Slab Selected", "Please select a player slab.");
+                    return;
+                }
+                const max = PLAYER_DATA[slab]?.length;
 
                 if (isNaN(number) || number < 1 || number > max) {
                     showInfoModal("Invalid Input", `Please enter a valid number between 1 and ${max}.`);
@@ -360,7 +471,7 @@
             $('#slabSelect').onchange = updateNumberRange;
             updateNumberRange();
             
-            startTimer($('#timerBar'), CONFIG.DECISION_TIMER_SECONDS, () => {
+            startTimer($('#timerBar'), activeConfig.DECISION_TIMER_SECONDS, () => {
                 logMessage(`Time's up! A random pick was made for you.`);
                 teams[0].pick = generateRandomPick();
                 $('#playerInputArea').classList.add('hidden');
@@ -369,7 +480,8 @@
         }
         
         function generateRandomPick() {
-            const slabs = ['gold', 'silver', 'bronze'];
+            const slabs = Object.keys(PLAYER_DATA).filter(s => PLAYER_DATA[s].length > 0);
+            if (slabs.length === 0) return null;
             const slab = slabs[Math.floor(Math.random() * slabs.length)];
             const max = PLAYER_DATA[slab].length;
             const number = Math.floor(Math.random() * max) + 1;
@@ -377,21 +489,18 @@
         }
 
         function generateCpuPick(team) {
+            const availableSlabs = Object.keys(gameState.availablePlayers).filter(s => gameState.availablePlayers[s].length > 0);
+            if(availableSlabs.length === 0) return null;
+
             let slab;
             const rand = Math.random();
-            if (team.purse > CONFIG.INITIAL_PURSE * 0.7 && rand < 0.5) {
+            if (team.purse > activeConfig.INITIAL_PURSE * 0.7 && rand < 0.5 && availableSlabs.includes('gold')) {
                 slab = 'gold';
-            } else if (team.purse < CONFIG.INITIAL_PURSE * 0.3 && rand < 0.6) {
-                slab = 'bronze';
             } else {
-                slab = 'silver';
+                slab = availableSlabs[Math.floor(Math.random() * availableSlabs.length)];
             }
             
-            if (gameState.availablePlayers[slab].length === 0) {
-                if (gameState.availablePlayers['silver'].length > 0) slab = 'silver';
-                else if (gameState.availablePlayers['bronze'].length > 0) slab = 'bronze';
-                else slab = 'gold';
-            }
+            if(!slab) slab = availableSlabs[0];
 
             const max = PLAYER_DATA[slab].length;
             const number = Math.floor(Math.random() * max) + 1;
@@ -399,28 +508,34 @@
         }
 
         async function processRoundPicks() {
-             const picks = teams
+            const picks = teams
                 .filter(t => t.section === gameState.currentSection && t.pick)
                 .map(t => ({ teamId: t.id, ...t.pick }));
 
             if (picks.length === 0) {
-                logMessage("No valid picks to process.");
+                logMessage("No valid picks to process for this section.");
                 endRound();
                 return;
             }
 
-            const goldPicks = picks.filter(p => p.slab === 'gold');
-            const silverPicks = picks.filter(p => p.slab === 'silver');
-            const bronzePicks = picks.filter(p => p.slab === 'bronze');
-            
-            if (goldPicks.length > 0 && gameState.availablePlayers.gold.length > 0) {
-                await handleAuction(goldPicks, 'gold');
-            } else if (silverPicks.length > 0 && gameState.availablePlayers.silver.length > 0) {
-                await handleAuction(silverPicks, 'silver');
-            } else if (bronzePicks.length > 0 && gameState.availablePlayers.bronze.length > 0) {
-                 await handleAuction(bronzePicks, 'bronze');
-            } else {
-                logMessage("No available players in the chosen slabs for this round.");
+            const picksBySlab = {};
+            picks.forEach(p => {
+                if(!picksBySlab[p.slab]) picksBySlab[p.slab] = [];
+                picksBySlab[p.slab].push(p);
+            });
+
+            const slabOrder = Object.keys(PLAYER_DATA);
+
+            for(const slab of slabOrder) {
+                const slabPicks = picksBySlab[slab];
+                if (slabPicks && slabPicks.length > 0 && gameState.availablePlayers[slab]?.length > 0) {
+                     logMessage(`--- Processing ${slab.toUpperCase()} picks ---`, "gold");
+                    if (slabPicks.length === 1) {
+                        await handleUncontestedPick(slabPicks[0], slab);
+                    } else {
+                        await handleAuction(slabPicks, slab);
+                    }
+                }
             }
             
             endRound();
@@ -429,7 +544,7 @@
         async function handleAuction(picks, slab) {
             logMessage(`Auctioning from the ${slab.toUpperCase()} slab.`);
             const availableSlabPlayers = gameState.availablePlayers[slab];
-            if(availableSlabPlayers.length === 0) {
+            if(!availableSlabPlayers || availableSlabPlayers.length === 0) {
                 logMessage(`No more players in the ${slab} slab.`);
                 return;
             }
@@ -458,6 +573,33 @@
             logMessage(`Priority List: ${priorityList.map(t => t.name).join(', ')}`);
             
             await runBiddingProcess(priorityList, targetPlayer);
+        }
+
+        async function handleUncontestedPick(pick, slab) {
+            const team = teams.find(t => t.id === pick.teamId);
+            logMessage(`${team.name} is the only one to pick from the ${slab} slab.`);
+
+            const targetPlayer = PLAYER_DATA[slab][pick.number - 1];
+
+            if (!targetPlayer) {
+                logMessage(`Invalid player number selected by ${team.name}. Pick is void.`, 'red');
+                return;
+            }
+
+            const isPlayerAvailable = gameState.availablePlayers[slab].some(p => p.id === targetPlayer.id);
+
+            if (isPlayerAvailable) {
+                logMessage(`${team.name} automatically gets their chosen player: ${targetPlayer.name}!`, 'green');
+                $('#auctionArea').innerHTML = renderPlayerCard(targetPlayer, `Uncontested Pick for ${team.name}`);
+                await awardPlayer(team, targetPlayer, 0);
+            } else {
+                logMessage(`${targetPlayer.name} was already drafted. ${team.name}'s pick is void.`, 'red');
+                $('#auctionArea').innerHTML = `<div class="text-center text-red-400 p-6">
+                    <h3 class="text-2xl font-bold">Player Unavailable</h3>
+                    <p>${targetPlayer.name} has already been drafted.</p>
+                </div>`;
+                await sleep(2000);
+            }
         }
         
         async function runBiddingProcess(priorityList, player) {
@@ -602,13 +744,13 @@
             logMessage(`${team.name} signs ${player.name} for $${price}M!`, 'green');
             renderTeam(team.id);
             updatePurseDisplay(team.id);
-            await sleep(1500);
+            await sleep(2000);
         }
 
         function endRound() {
             gameState.isRoundInProgress = false;
             
-            const isEveryTeamFull = teams.every(t => t.squad.length >= CONFIG.SLOTS_PER_TEAM);
+            const isEveryTeamFull = teams.every(t => t.squad.length >= activeConfig.SLOTS_PER_TEAM);
             if (isEveryTeamFull) {
                 endGame();
                 return;
@@ -625,8 +767,7 @@
         function endGame() {
             gameState.isGameOver = true;
             logMessage(`--- GAME OVER ---`);
-            $('#gameScreen').classList.add('hidden');
-            $('#gameOverScreen').classList.remove('hidden');
+            showScreen('gameOverScreen');
             
             const gameData = teams.map(t => ({name: t.name, squad: t.squad}));
             localStorage.setItem('lastCricketGame', JSON.stringify(gameData));
@@ -635,7 +776,16 @@
         }
 
         // --- UI & RENDERING ---
+        function showScreen(screenId) {
+            ['homeScreen', 'hostGameSetupScreen', 'lobbyScreen', 'gameScreen', 'gameOverScreen', 'lastGameScreen'].forEach(id => {
+                $(`#${id}`).classList.add('hidden');
+            });
+            $(`#${screenId}`).classList.remove('hidden');
+        }
+
         function renderAllTeams() {
+            $('#teamListA').innerHTML = '';
+            $('#teamListB').innerHTML = '';
             teams.forEach(team => renderTeam(team.id));
         }
         
@@ -645,7 +795,7 @@
             if (teamDiv) teamDiv.remove();
 
             const listId = team.section === 'A' ? '#teamListA' : '#teamListB';
-            const shortSquadList = team.squad.slice(0, 3).map(p => `<span class="text-xs px-1.5 py-0.5 rounded ${p.slab === 'gold' ? 'bg-yellow-600' : p.slab === 'silver' ? 'bg-gray-500' : 'bg-yellow-800'}">${p.name.split(' ')[0][0]}${p.name.split(' ')[1][0]}</span>`).join(' ');
+            const shortSquadList = team.squad.slice(0, 3).map(p => `<span class="text-xs px-1.5 py-0.5 rounded ${p.slab === 'gold' ? 'bg-yellow-600' : p.slab === 'silver' ? 'bg-gray-500' : 'bg-yellow-800'}">${p.name.split(' ')[0][0]}${p.name.split(' ')[1] ? p.name.split(' ')[1][0] : ''}</span>`).join(' ');
             const remaining = team.squad.length > 3 ? ` +${team.squad.length - 3}` : '';
 
             const element = `
@@ -656,7 +806,7 @@
                     </div>
                     <div class="flex justify-between items-center mt-1 text-gray-300">
                          <div class="text-xs truncate" title="${team.squad.map(p=>p.name).join(', ')}">${shortSquadList}${remaining}</div>
-                         <span class="text-xs font-medium">${team.squad.length}/${CONFIG.SLOTS_PER_TEAM}</span>
+                         <span class="text-xs font-medium">${team.squad.length}/${activeConfig.SLOTS_PER_TEAM}</span>
                     </div>
                 </div>
             `;
@@ -729,9 +879,28 @@
         
         function updateNumberRange() {
             const slab = $('#slabSelect').value;
+            const slabPlayers = PLAYER_DATA[slab];
+            if (!slabPlayers || slabPlayers.length === 0) {
+                $('#numberRange').textContent = 'N/A';
+                $('#numberInput').value = '';
+                $('#numberInput').disabled = true;
+                return;
+            }
+            $('#numberInput').disabled = false;
             const max = PLAYER_DATA[slab].length;
             $('#numberRange').textContent = `1 - ${max}`;
             $('#numberInput').max = max;
+        }
+        
+        function updateSlabSelect() {
+            const select = $('#slabSelect');
+            select.innerHTML = '';
+            Object.keys(PLAYER_DATA).forEach(slabName => {
+                const option = document.createElement('option');
+                option.value = slabName;
+                option.textContent = slabName.charAt(0).toUpperCase() + slabName.slice(1);
+                select.appendChild(option);
+            });
         }
 
         function logMessage(message, color = 'gray') {
@@ -797,7 +966,7 @@
                     $('#modalButtons').appendChild(button);
                 });
                 
-                startTimer($('#modalTimerBar'), CONFIG.DECISION_TIMER_SECONDS, () => {
+                startTimer($('#modalTimerBar'), activeConfig.DECISION_TIMER_SECONDS, () => {
                     hideModal();
                     resolve(false); 
                 });
@@ -809,10 +978,10 @@
                 <h3 class="text-2xl font-bold mb-4">Game Rules</h3>
                 <div class="text-left text-gray-300 max-h-[60vh] overflow-y-auto pr-4 rules-content">
                     <h3>The Objective</h3>
-                    <p>Your goal is to build a full squad of <strong>${CONFIG.SLOTS_PER_TEAM} players</strong> by participating in a multi-round draft and auction, all while managing your starting purse of <strong>$${CONFIG.INITIAL_PURSE}M</strong>.</p>
+                    <p>Your goal is to build a full squad of players by participating in a multi-round draft and auction, all while managing your starting purse.</p>
                     
                     <h3>The Draft</h3>
-                    <p>The game consists of 10 teams, split into two sections (A and B). The draft proceeds in rounds, alternating between each section.</p>
+                    <p>The game consists of multiple teams, split into two sections (A and B). The draft proceeds in rounds, alternating between each section.</p>
                     
                     <h3>Making a Pick</h3>
                     <p>When it's your section's turn, you must select:</p>
@@ -935,6 +1104,69 @@
             $('#modal-close-btn').onclick = hideModal;
         }
 
+        function showGameModeModal() {
+            const modalContent = `
+                <h3 class="text-2xl font-bold mb-4">Choose Game Mode</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button id="practiceGameBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-md transition duration-300">Practice Game</button>
+                    <button id="onlineGameBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-md transition duration-300">Play Online</button>
+                </div>
+                 <div class="flex justify-center mt-6">
+                    <button id="modal-cancel-btn" class="px-6 py-2 rounded-md font-semibold transition bg-gray-600 hover:bg-gray-700">Cancel</button>
+                </div>
+            `;
+            $('#modal-content-container').innerHTML = modalContent;
+            $('#modal').classList.remove('hidden');
+            $('#modal').classList.add('flex');
+
+            $('#practiceGameBtn').onclick = () => { hideModal(); initGame(false); };
+            $('#onlineGameBtn').onclick = () => { hideModal(); showOnlineMenuModal(); };
+            $('#modal-cancel-btn').onclick = hideModal;
+        }
+        
+        function showOnlineMenuModal() {
+             const modalContent = `
+                <h3 class="text-2xl font-bold mb-4">Play Online</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button id="hostGameBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-4 rounded-md transition duration-300">Host a Game</button>
+                    <button id="joinGameBtn" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-4 rounded-md transition duration-300">Join a Game</button>
+                </div>
+                 <div class="flex justify-center mt-6">
+                    <button id="modal-cancel-btn" class="px-6 py-2 rounded-md font-semibold transition bg-gray-600 hover:bg-gray-700">Back</button>
+                </div>
+            `;
+            $('#modal-content-container').innerHTML = modalContent;
+            $('#modal').classList.remove('hidden');
+            $('#modal').classList.add('flex');
+            $('#hostGameBtn').onclick = () => { hideModal(); showScreen('hostGameSetupScreen'); };
+            $('#joinGameBtn').onclick = () => { hideModal(); showJoinGameModal(); };
+            $('#modal-cancel-btn').onclick = showGameModeModal;
+        }
+
+        function showJoinGameModal() {
+             const modalContent = `
+                <h3 class="text-2xl font-bold mb-4">Join Game</h3>
+                <label for="gameKeyInput" class="block text-sm font-medium text-gray-300 mb-2">Enter 5-Digit Game Key</label>
+                <input type="text" id="gameKeyInput" class="w-full bg-gray-700 border border-gray-600 rounded-md px-4 py-2 text-white uppercase" maxlength="5">
+                <div class="flex justify-end gap-4 mt-6">
+                    <button id="modal-cancel-btn" class="px-6 py-2 rounded-md font-semibold transition bg-gray-600 hover:bg-gray-700">Cancel</button>
+                    <button id="submitJoinBtn" class="px-6 py-2 rounded-md font-semibold transition bg-teal-600 hover:bg-teal-700">Join</button>
+                </div>
+            `;
+             $('#modal-content-container').innerHTML = modalContent;
+            $('#modal').classList.remove('hidden');
+            $('#modal').classList.add('flex');
+            $('#modal-cancel-btn').onclick = showOnlineMenuModal;
+            $('#submitJoinBtn').onclick = () => {
+                const gameKey = $('#gameKeyInput').value.toUpperCase();
+                if(gameKey.length === 5) {
+                    joinGame(gameKey);
+                } else {
+                    showInfoModal('Invalid Key', 'Please enter a valid 5-digit game key.');
+                }
+            };
+        }
+
         function hideModal() {
             clearInterval(timerInterval);
             $('#modal').classList.add('hidden');
@@ -970,33 +1202,219 @@
             });
         }
 
+        // --- HOST/JOIN/ONLINE LOGIC ---
+        function renderSlabList() {
+            const container = $('#slabList');
+            container.innerHTML = '';
+            customSlabs.forEach(slab => {
+                 const slabEl = document.createElement('div');
+                slabEl.className = 'flex items-center bg-gray-900/50 px-3 py-1 rounded-full text-sm';
+                slabEl.innerHTML = `
+                    <span>${slab}</span>
+                    <button class="remove-slab-btn text-red-400 hover:text-red-600 font-bold ml-2" data-slab="${slab}">&times;</button>
+                `;
+                container.appendChild(slabEl);
+            });
+
+            $$('.remove-slab-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const slabToRemove = e.target.dataset.slab;
+                    customSlabs = customSlabs.filter(s => s !== slabToRemove);
+                    renderSlabList();
+                    renderSlabSelector();
+                };
+            });
+        }
+        
+        function renderSlabSelector() {
+            const select = $('#playerSlabSelect');
+            select.innerHTML = '';
+            if (customSlabs.length === 0) {
+                select.innerHTML = '<option disabled>Please add a slab first</option>';
+            }
+            customSlabs.forEach(slab => {
+                const option = document.createElement('option');
+                option.value = slab;
+                option.textContent = slab;
+                select.appendChild(option);
+            });
+        }
+
+        function renderCustomPlayerList() {
+            const container = $('#customPlayerListContainer');
+            container.innerHTML = '';
+            if (customPlayers.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400">No players added yet.</p>';
+                return;
+            }
+            customPlayers.forEach(p => {
+                const playerEl = document.createElement('div');
+                playerEl.className = 'flex justify-between items-center bg-gray-900/50 p-2 rounded-md mb-2';
+                playerEl.innerHTML = `
+                    <div>
+                        <span class="font-bold">${p.name}</span>
+                        <span class="text-xs px-2 py-1 rounded-full ml-2 bg-gray-600">${p.slab}</span>
+                    </div>
+                    <button class="remove-player-btn text-red-400 hover:text-red-600 font-bold text-lg" data-id="${p.tempId}">&times;</button>
+                `;
+                container.appendChild(playerEl);
+            });
+
+            $$('.remove-player-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const idToRemove = parseInt(e.target.dataset.id);
+                    customPlayers = customPlayers.filter(p => p.tempId !== idToRemove);
+                    renderCustomPlayerList();
+                };
+            });
+        }
+
+        function addCustomPlayer() {
+            const name = $('#playerNameInput').value.trim();
+            const slab = $('#playerSlabSelect').value;
+            const perk = $('#playerPerkInput').value.trim() || 'N/A';
+            
+            if (!name) return showInfoModal('Invalid Input', 'Player name cannot be empty.');
+            if (!slab) return showInfoModal('Invalid Input', 'Please add and select a slab first.');
+
+            customPlayers.push({ tempId: tempIdCounter++, name, slab, perk });
+            $('#playerNameInput').value = '';
+            $('#playerPerkInput').value = '';
+            $('#playerNameInput').focus();
+            renderCustomPlayerList();
+        }
+        
+        async function createGame() {
+            showLoadingModal("Creating your game...");
+            const gameId = Math.random().toString(36).substring(2, 7).toUpperCase();
+            const gameRef = doc(db, `/artifacts/${appId}/public/data/games`, gameId);
+
+            const hostPlayer = {
+                userId: userId,
+                name: $('#teamNameInput').value,
+                isHost: true
+            };
+
+            const gameData = {
+                hostId: userId,
+                createdAt: serverTimestamp(),
+                status: 'lobby',
+                config: {
+                    maxTeams: parseInt($('#maxTeamsInput').value),
+                    slotsPerTeam: parseInt($('#slotsPerTeamInput').value),
+                    maxPurse: parseInt($('#maxPurseInput').value),
+                    slabs: customSlabs,
+                },
+                players: customPlayers,
+                teams: [hostPlayer],
+                gameState: null
+            };
+
+            await setDoc(gameRef, gameData);
+            hideModal();
+            listenToGameUpdates(gameId);
+            showScreen('lobbyScreen');
+        }
+        
+        async function joinGame(gameId) {
+            showLoadingModal(`Joining game ${gameId}...`);
+            const gameRef = doc(db, `/artifacts/${appId}/public/data/games`, gameId);
+            const gameDoc = await getDoc(gameRef);
+
+            if (!gameDoc.exists()) {
+                return showInfoModal('Error', 'Game not found. Please check the key.');
+            }
+
+            const gameData = gameDoc.data();
+            if (gameData.teams.length >= gameData.config.maxTeams) {
+                return showInfoModal('Error', 'This game lobby is full.');
+            }
+            if (gameData.status !== 'lobby') {
+                return showInfoModal('Error', 'This game has already started.');
+            }
+
+            const newPlayer = {
+                userId: userId,
+                name: $('#teamNameInput').value,
+                isHost: false
+            };
+
+            await updateDoc(gameRef, { teams: arrayUnion(newPlayer) });
+
+            hideModal();
+            listenToGameUpdates(gameId);
+            showScreen('lobbyScreen');
+        }
+        
+        function listenToGameUpdates(gameId) {
+            if (gameUnsubscribe) gameUnsubscribe();
+
+            const gameRef = doc(db, `/artifacts/${appId}/public/data/games`, gameId);
+            gameUnsubscribe = onSnapshot(gameRef, (doc) => {
+                if (!doc.exists()) {
+                    showInfoModal("Game Ended", "The host has closed the game lobby.");
+                    if(gameUnsubscribe) gameUnsubscribe();
+                    showScreen('homeScreen');
+                    return;
+                }
+                const gameData = doc.data();
+                gameState.online = gameData; // Store latest game state
+
+                if (gameData.status === 'lobby') {
+                    renderLobby(gameData);
+                } else if (gameData.status === 'in-progress') {
+                    // Start or update the game
+                }
+            });
+        }
+        
+        function renderLobby(gameData) {
+            $('#gameKeyDisplay').textContent = gameData.hostId; // Temp use of hostId as key
+            $('#playerCount').textContent = gameData.teams.length;
+            $('#maxPlayerCount').textContent = gameData.config.maxTeams;
+
+            const playerListContainer = $('#lobbyPlayerList');
+            playerListContainer.innerHTML = '';
+            gameData.teams.forEach(team => {
+                const playerEl = document.createElement('div');
+                playerEl.className = 'bg-gray-700/50 p-3 rounded-md flex items-center justify-between';
+                playerEl.innerHTML = `
+                    <span class="font-semibold">${team.name} ${team.userId === userId ? '(You)' : ''}</span>
+                    <span class="text-xs ${team.isHost ? 'text-yellow-400' : 'text-gray-400'}">${team.isHost ? 'Host' : 'Player'}</span>
+                `;
+                playerListContainer.appendChild(playerEl);
+            });
+            
+            if (userId === gameData.hostId) {
+                $('#startGameFromLobbyBtn').classList.remove('hidden');
+                // Could add logic to only enable when > 1 player
+            }
+        }
+
+
         // --- EVENT LISTENERS ---
         $('#startGameBtn').addEventListener('click', () => {
              if (!$('#teamNameInput').value) {
-                showInfoModal("Team Name Required", "Please enter a team name to start the game.");
+                showInfoModal("Team Name Required", "Please enter a team name to start.");
                 return;
             }
-            initGame();
+            showGameModeModal();
         });
         
-        $('#playAgainBtn').addEventListener('click', () => {
-            $('#gameOverScreen').classList.add('hidden');
-            $('#homeScreen').classList.remove('hidden');
+        $('#quitGameBtn').addEventListener('click', () => {
+            clearInterval(timerInterval);
+            hideModal();
+            showScreen('homeScreen');
+            logMessage("Game quit by user.", "red");
         });
 
+        $('#playAgainBtn').addEventListener('click', () => showScreen('homeScreen'));
         $('#viewLastGameBtn').addEventListener('click', () => {
-             $('#homeScreen').classList.add('hidden');
-             $('#lastGameScreen').classList.remove('hidden');
+             showScreen('lastGameScreen');
              renderFinalSquads('lastGameSquads');
         });
-
-        $('#backToHomeBtn').addEventListener('click', () => {
-            $('#lastGameScreen').classList.add('hidden');
-            $('#homeScreen').classList.remove('hidden');
-        });
-        
+        $('#backToHomeBtn').addEventListener('click', () => showScreen('homeScreen'));
         $('#rulesBtn').addEventListener('click', showRulesModal);
-
         $('#suggestNameBtn').addEventListener('click', async () => {
             showLoadingModal("✨ Generating creative team names...");
             const prompt = `Generate exactly 5 cool, creative, and epic team names for a fantasy cricket team. The names should be unique and powerful. Return them as a single JSON array of strings. Example: ["Cosmic Comets", "Velocity Vipers"]`;
@@ -1013,11 +1431,62 @@
             }
         });
 
+        // Host/Custom Game Screen Listeners
+        $('#addSlabBtn').addEventListener('click', () => {
+            const slabName = $('#slabNameInput').value.trim().toLowerCase();
+            if (slabName && !customSlabs.includes(slabName)) {
+                customSlabs.push(slabName);
+                renderSlabList();
+                renderSlabSelector();
+                $('#slabNameInput').value = '';
+            }
+        });
+        $('#addPlayerBtn').addEventListener('click', addCustomPlayer);
+        $('#createGameBtn').addEventListener('click', () => {
+            const totalPlayersNeeded = parseInt($('#maxTeamsInput').value) * parseInt($('#slotsPerTeamInput').value);
+            if (customPlayers.length < totalPlayersNeeded) {
+                return showInfoModal('Not Enough Players', `You need at least ${totalPlayersNeeded} players for this game setup. You currently have ${customPlayers.length}.`);
+            }
+            createGame();
+        });
+        $('#backToHomeFromHostBtn').addEventListener('click', () => showScreen('homeScreen'));
+
+
         // --- INITIALIZATION ---
-        generatePlayers();
+        async function main() {
+            showLoadingModal("Connecting...");
+            try {
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, user => {
+                    if(user) {
+                        userId = user.uid;
+                        $('#userIdDisplay').textContent = userId;
+                        hideModal();
+                    }
+                });
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { 
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else { 
+                    await signInAnonymously(auth);
+                }
+
+            } catch(e) {
+                console.error("Firebase init failed:", e);
+                showInfoModal("Connection Error", "Could not connect to the server. Online features will be unavailable.");
+            }
+            generateDefaultPlayers();
+            renderCustomPlayerList();
+            renderSlabList();
+            renderSlabSelector();
+        }
+
+        main();
     </script>
 </body>
 </html>
-
-
 

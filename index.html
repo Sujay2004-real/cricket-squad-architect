@@ -88,7 +88,7 @@
 
     <div id="app">
         <!-- Home Screen -->
-        <div id="homeScreen" class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div id="homeScreen" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
             <h1 class="text-5xl font-bold text-blue-400 mb-2">Cricket Squad Architect</h1>
             <p class="text-gray-400 mb-8">The Ultimate Draft & Auction Challenge</p>
             <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-md">
@@ -102,6 +102,16 @@
                  <button id="rulesBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-md mt-3 transition duration-300">Game Rules</button>
             </div>
              <p class="text-xs text-gray-500 mt-4">User ID: <span id="userIdDisplay"></span></p>
+        </div>
+
+        <!-- Firebase Setup Screen -->
+        <div id="firebaseSetupScreen" class="hidden min-h-screen flex flex-col items-center justify-center p-4">
+            <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-full max-w-lg">
+                <h2 class="text-2xl font-bold mb-4 text-yellow-400">Firebase Connection Required</h2>
+                <p id="firebaseErrorMsg" class="text-gray-300 mb-4">To use online features, please provide your Firebase project configuration. You can get this from your Firebase project settings by creating a new Web App.</p>
+                <textarea id="firebaseConfigInput" class="w-full h-48 bg-gray-900 text-sm font-mono p-2 rounded-md border border-gray-600" placeholder="Paste your Firebase config object here..."></textarea>
+                <button id="connectFirebaseBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md mt-4">Connect and Save</button>
+            </div>
         </div>
 
         <!-- Host Game Setup Screen -->
@@ -777,7 +787,7 @@
 
         // --- UI & RENDERING ---
         function showScreen(screenId) {
-            ['homeScreen', 'hostGameSetupScreen', 'lobbyScreen', 'gameScreen', 'gameOverScreen', 'lastGameScreen'].forEach(id => {
+            ['homeScreen', 'firebaseSetupScreen', 'hostGameSetupScreen', 'lobbyScreen', 'gameScreen', 'gameOverScreen', 'lastGameScreen'].forEach(id => {
                 $(`#${id}`).classList.add('hidden');
             });
             $(`#${screenId}`).classList.remove('hidden');
@@ -1296,6 +1306,7 @@
             };
 
             const gameData = {
+                gameId: gameId,
                 hostId: userId,
                 createdAt: serverTimestamp(),
                 status: 'lobby',
@@ -1322,14 +1333,17 @@
             const gameDoc = await getDoc(gameRef);
 
             if (!gameDoc.exists()) {
+                hideModal();
                 return showInfoModal('Error', 'Game not found. Please check the key.');
             }
 
             const gameData = gameDoc.data();
             if (gameData.teams.length >= gameData.config.maxTeams) {
+                hideModal();
                 return showInfoModal('Error', 'This game lobby is full.');
             }
             if (gameData.status !== 'lobby') {
+                hideModal();
                 return showInfoModal('Error', 'This game has already started.');
             }
 
@@ -1358,7 +1372,7 @@
                     return;
                 }
                 const gameData = doc.data();
-                gameState.online = gameData; // Store latest game state
+                gameState.online = gameData; 
 
                 if (gameData.status === 'lobby') {
                     renderLobby(gameData);
@@ -1369,7 +1383,7 @@
         }
         
         function renderLobby(gameData) {
-            $('#gameKeyDisplay').textContent = gameData.hostId; // Temp use of hostId as key
+            $('#gameKeyDisplay').textContent = gameData.gameId;
             $('#playerCount').textContent = gameData.teams.length;
             $('#maxPlayerCount').textContent = gameData.config.maxTeams;
 
@@ -1388,6 +1402,15 @@
             if (userId === gameData.hostId) {
                 $('#startGameFromLobbyBtn').classList.remove('hidden');
                 // Could add logic to only enable when > 1 player
+            }
+        }
+
+        function promptForFirebaseConfig(errorMessage = null) {
+            hideModal();
+            showScreen('firebaseSetupScreen');
+            if (errorMessage) {
+                $('#firebaseErrorMsg').textContent = errorMessage;
+                $('#firebaseErrorMsg').classList.add('text-red-400');
             }
         }
 
@@ -1451,12 +1474,42 @@
         });
         $('#backToHomeFromHostBtn').addEventListener('click', () => showScreen('homeScreen'));
 
+        $('#connectFirebaseBtn').addEventListener('click', () => {
+            const configString = $('#firebaseConfigInput').value;
+            if (!configString) {
+                showInfoModal("Input Missing", "Please paste your Firebase config object.");
+                return;
+            }
+            try {
+                // Quick validation to see if it's JSON
+                JSON.parse(configString);
+                localStorage.setItem('firebaseConfig', configString);
+                main(); // Retry connection
+            } catch (e) {
+                showInfoModal("Invalid JSON", "The text you pasted is not a valid JSON object. Please check your Firebase configuration.");
+            }
+        });
+
 
         // --- INITIALIZATION ---
         async function main() {
             showLoadingModal("Connecting...");
+            let firebaseConfigString = localStorage.getItem('firebaseConfig');
+            let configSource = 'local storage';
+
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                firebaseConfigString = __firebase_config;
+                configSource = 'injected environment';
+            }
+
+            if (!firebaseConfigString) {
+                promptForFirebaseConfig();
+                return;
+            }
+
             try {
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                console.log(`Attempting to connect to Firebase using config from ${configSource}...`);
+                const firebaseConfig = JSON.parse(firebaseConfigString);
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -1465,7 +1518,10 @@
                     if(user) {
                         userId = user.uid;
                         $('#userIdDisplay').textContent = userId;
-                        hideModal();
+                        if ($('#firebaseSetupScreen').classList.contains('hidden')) {
+                             hideModal();
+                        }
+                        showScreen('homeScreen');
                     }
                 });
 
@@ -1477,8 +1533,13 @@
 
             } catch(e) {
                 console.error("Firebase init failed:", e);
-                showInfoModal("Connection Error", "Could not connect to the server. Online features will be unavailable.");
+                if (configSource === 'local storage') {
+                    localStorage.removeItem('firebaseConfig');
+                }
+                promptForFirebaseConfig("Connection failed. Please check your Firebase config and try again.");
+                return; // Stop execution if connection fails
             }
+
             generateDefaultPlayers();
             renderCustomPlayerList();
             renderSlabList();

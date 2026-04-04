@@ -1,0 +1,13 @@
+[build]
+  base = "frontend"
+  command = "npm install && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# This rewrite rule ensures React Router handles all paths so you don't get 404 errors on reload
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

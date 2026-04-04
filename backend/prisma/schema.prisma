@@ -1,0 +1,67 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  createdAt DateTime @default(now())
+  
+  teams     Team[]
+  hostedGames Game[]
+}
+
+model Game {
+  id              String   @id @default(uuid())
+  gameKey         String   @unique
+  hostId          String
+  host            User     @relation(fields: [hostId], references: [id])
+  status          String   @default("LOBBY") // LOBBY, IN_PROGRESS, COMPLETED
+  
+  maxTeams        Int      @default(10)
+  slotsPerTeam    Int      @default(11)
+  initialPurse    Int      @default(100)
+  
+  teams           Team[]
+  draftPool       DraftPlayer[]
+  
+  currentRound    Int      @default(1)
+  currentSection  String   @default("A")
+  
+  createdAt       DateTime @default(now())
+}
+
+model Team {
+  id                String   @id @default(uuid())
+  name              String
+  gameId            String
+  game              Game     @relation(fields: [gameId], references: [id])
+  
+  userId            String?  // Null if CPU
+  user              User?    @relation(fields: [userId], references: [id])
+  isCPU             Boolean  @default(false)
+  
+  section           String   // "A" or "B"
+  purse             Int      @default(100)
+  
+  draftedPlayers    DraftPlayer[]
+}
+
+model DraftPlayer {
+  id              String   @id @default(uuid())
+  gameId          String
+  game            Game     @relation(fields: [gameId], references: [id])
+  
+  name            String
+  slab            String   // "gold", "silver", "bronze", etc
+  perk            String
+  accomplishments String?
+  
+  teamId          String?  // Null if not drafted
+  team            Team?    @relation(fields: [teamId], references: [id])
+  draftPrice      Int?
+}

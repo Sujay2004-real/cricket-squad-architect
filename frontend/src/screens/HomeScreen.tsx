@@ -7,11 +7,18 @@ const HomeScreen: React.FC = () => {
   const navigate = useNavigate();
   const [teamName, setTeamName] = useState('');
   const [isRulesOpen, setIsRulesOpen] = useState(false);
+  const [joinKey, setJoinKey] = useState('');
   const { userId } = useGameStore();
 
   const handleStartGame = () => {
-    const lobbyId = Math.random().toString(36).substring(2, 7).toUpperCase();
-    navigate(`/lobby/${lobbyId}`);
+    // Usually host setup goes to HostSetupScreen... but we can just skip or go direct. Wait, the user wants CPU modes. HostSetupScreen allows config. Let's redirect to standard host setup.
+    navigate('/host');
+  };
+
+  const handleJoinGame = () => {
+    if (joinKey.trim()) {
+      navigate(`/lobby/${joinKey.trim().toUpperCase()}`);
+    }
   };
 
   const suggestName = async () => {
@@ -67,6 +74,22 @@ const HomeScreen: React.FC = () => {
             Host New Game
           </button>
           
+          <div className="flex gap-2 mb-4">
+               <input 
+                  type="text" 
+                  value={joinKey}
+                  onChange={(e) => setJoinKey(e.target.value)}
+                  placeholder="LOBBY KEY"
+                  className="w-2/3 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none uppercase font-mono tracking-widest"
+               />
+               <button 
+                  onClick={handleJoinGame}
+                  className="w-1/3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-2 rounded-xl transition-all shadow-[0_0_15px_rgba(5,150,105,0.3)] uppercase text-sm tracking-wider"
+               >
+                  Join
+               </button>
+          </div>
+
           <button 
             onClick={() => setIsRulesOpen(true)}
             className="w-full bg-slate-800/80 hover:bg-slate-700 border border-slate-600 hover:border-blue-400 text-slate-200 font-bold py-4 px-4 rounded-xl transition-all duration-300 uppercase tracking-widest text-sm"

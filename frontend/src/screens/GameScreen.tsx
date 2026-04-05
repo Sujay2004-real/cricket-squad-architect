@@ -6,12 +6,20 @@ import { socket } from '../services/socket';
 export default function GameScreen() {
     const { gameKey } = useParams();
     const navigate = useNavigate();
-    const { round, currentSection, updateGameState } = useGameStore();
+    const { round, currentSection, updateGameState, userId } = useGameStore();
 
     const [selectedSlab, setSelectedSlab] = useState('Gold');
     const [selectedNumber, setSelectedNumber] = useState('');
     const [logs, setLogs] = useState<string[]>([]);
     
+    // Custom PRD States
+    const [auctionRequest, setAuctionRequest] = useState<any>(null);
+    const [challengeRequest, setChallengeRequest] = useState<any>(null);
+    const [bidAmount, setBidAmount] = useState<number>(0);
+
+    // Provide a default team ID since the user might not have one hardcoded locally in this mockup
+    const defaultMyTeamId = userId || 'team-1';
+
     useEffect(() => {
         if (gameKey) {
             socket.emit('joinLobby', gameKey);
@@ -20,22 +28,62 @@ export default function GameScreen() {
 
         socket.on('gameStateUpdate', (state) => {
              updateGameState(state);
-             setLogs(prev => [`[System] Matrix synchronized.`, ...prev]);
+             if (state.turnState === 'WAITING_FOR_PICKS') {
+                 setAuctionRequest(null);
+                 setChallengeRequest(null);
+             }
         });
         
-        socket.on('bidUpdate', (data) => {
-             setLogs(prev => [`[Auction] ${data.message}`, ...prev]);
+        socket.on('requestAction', (data) => {
+             // Example data: { activeTeamId, instructions, targetPlayer, currentBid }
+             if (data.activeTeamId === defaultMyTeamId) {
+                 setAuctionRequest(data);
+             } else {
+                 setLogs(prev => [`[Auction] Waiting for Team ${data.activeTeamId} to respond...`, ...prev]);
+             }
+        });
+
+        socket.on('requestChallenge', (data) => {
+             // Example data: { targetPlayer, challengerId, currentOwnerId }
+             if (data.challengerId === defaultMyTeamId) {
+                 setChallengeRequest(data);
+             }
+        });
+
+        socket.on('playerAllocated', (data) => {
+            setLogs(prev => [`[Transfer] Team ${data.teamId} acquired Player ID ${data.playerId} for $${data.price}M via ${data.reason}`, ...prev]);
+             setAuctionRequest(null);
+             setChallengeRequest(null);
         });
 
         return () => {
-            socket.off('gameStateUpdate');
-            socket.off('bidUpdate');
+             socket.off('gameStateUpdate');
+             socket.off('requestAction');
+             socket.off('requestChallenge');
+             socket.off('playerAllocated');
         };
-    }, [gameKey, updateGameState]);
+    }, [gameKey, updateGameState, defaultMyTeamId]);
 
     const submitPick = () => {
-        socket.emit('submitPick', { gameKey, selectedSlab, selectedNumber });
-        setLogs(prev => [`[You] Pick submitted: ${selectedSlab} #${selectedNumber}`, ...prev]);
+        socket.emit('submitPick', { gameKey, teamId: defaultMyTeamId, slab: selectedSlab, number: Number(selectedNumber) });
+        setLogs(prev => [`[You] Pick transmitted: ${selectedSlab} #${selectedNumber}`, ...prev]);
+    };
+
+    const handleAccept = () => {
+        socket.emit('actionAccept', { gameKey, teamId: defaultMyTeamId });
+        setAuctionRequest(null);
+    };
+
+    const handleReject = () => {
+        socket.emit('actionReject', { gameKey, teamId: defaultMyTeamId });
+        setAuctionRequest(null);
+        setChallengeRequest(null);
+    };
+
+    const handleSendChallenge = () => {
+        socket.emit('actionChallenge', { gameKey, teamId: defaultMyTeamId, originalId: challengeRequest.currentOwnerId, bidAmount });
+        setChallengeRequest(null);
+        setLogs(prev => [`[You] Placed a challenge bid of $${bidAmount}M!`, ...prev]);
     };
 
     return (
@@ -46,12 +94,6 @@ export default function GameScreen() {
                     <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 uppercase tracking-widest px-4 py-2 bg-slate-800/50 rounded-lg border border-slate-700">
                         Round {round}
                     </h2>
-                    <button 
-                        onClick={() => navigate('/')}
-                        className="text-slate-400 hover:text-red-400 font-bold text-sm transition-colors uppercase tracking-widest flex items-center gap-2"
-                    >
-                        <span className="text-xl">⏻</span> Disconnect
-                    </button>
                 </div>
                 
                 <div className="flex-1 flex justify-center">
@@ -75,20 +117,13 @@ export default function GameScreen() {
                 {/* Left Drawer (Sections) */}
                 <div className="w-full lg:w-1/4 flex flex-col gap-4 overflow-y-auto pr-2">
                     <div className={`p-5 rounded-xl border transition-all duration-500 ${currentSection === 'A' ? 'bg-blue-900/20 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)] pulse-border' : 'bg-slate-900/60 border-slate-700/50'}`}>
-                        <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700/50 pb-2 uppercase tracking-wider flex items-center justify-between">
-                            Section A 
-                            {currentSection === 'A' && <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded">ACTIVE</span>}
-                        </h3>
+                        <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700/50 pb-2 uppercase tracking-wider">Section A</h3>
                         <div className="space-y-3 h-32 flex items-center justify-center text-slate-500">
                             [Player Roster Data]
                         </div>
                     </div>
-                    
                     <div className={`p-5 rounded-xl border transition-all duration-500 ${currentSection === 'B' ? 'bg-indigo-900/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.3)] pulse-border' : 'bg-slate-900/60 border-slate-700/50'}`}>
-                        <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700/50 pb-2 uppercase tracking-wider flex items-center justify-between">
-                            Section B
-                            {currentSection === 'B' && <span className="text-xs bg-indigo-500 text-white px-2 py-1 rounded">ACTIVE</span>}
-                        </h3>
+                        <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700/50 pb-2 uppercase tracking-wider">Section B</h3>
                         <div className="space-y-3 h-32 flex items-center justify-center text-slate-500">
                             [Player Roster Data]
                         </div>
@@ -97,77 +132,117 @@ export default function GameScreen() {
 
                 {/* Center Console (Action & Timer) */}
                 <div className="w-full lg:w-2/4 flex flex-col gap-6">
-                    
                     <div className="glass-card flex-grow relative overflow-hidden p-8 flex flex-col justify-center">
-                        {/* Huge background watermark */}
-                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[15rem] font-black text-slate-800/10 z-0 pointer-events-none sel-none">
-                            {currentSection}
-                        </div>
-                        
                         <div className="relative z-10 w-full max-w-md mx-auto">
                             <h3 className="text-2xl font-black text-center text-white mb-8 uppercase tracking-widest glow-text">Mission Control</h3>
                             
-                            <div className="w-full bg-slate-950 rounded-full h-3 mb-8 border border-slate-700 shadow-inner overflow-hidden">
-                                <div className="bg-gradient-to-r from-green-500 via-yellow-400 to-red-500 h-full w-full rounded-full animate-[pulse_1s_ease-in-out_infinite]" style={{ width: '100%' }}></div>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700 focus-within:border-blue-500 transition-colors">
-                                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Priority Slab</label>
-                                    <select 
-                                        className="w-full bg-transparent text-white font-bold text-lg outline-none cursor-pointer"
-                                        value={selectedSlab}
-                                        onChange={(e) => setSelectedSlab(e.target.value)}
+                            {/* Standard Draft Pick Mode */}
+                            {!auctionRequest && !challengeRequest && (
+                                <>
+                                    <div className="w-full bg-slate-950 rounded-full h-3 mb-8 border border-slate-700 shadow-inner overflow-hidden">
+                                        <div className="bg-gradient-to-r from-emerald-400 via-amber-400 to-red-500 h-full w-full rounded-full animate-[pulse_1s_ease-in-out_infinite]" style={{ width: '100%' }}></div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                        <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700 focus-within:border-blue-500 transition-colors">
+                                            <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Priority Slab</label>
+                                            <select 
+                                                className="w-full bg-transparent text-white font-bold text-lg outline-none cursor-pointer"
+                                                value={selectedSlab}
+                                                onChange={(e) => setSelectedSlab(e.target.value)}
+                                            >
+                                                <option value="Gold" className="bg-slate-800">🥇 Gold</option>
+                                                <option value="Silver" className="bg-slate-800">🥈 Silver</option>
+                                                <option value="Bronze" className="bg-slate-800">🥉 Bronze</option>
+                                            </select>
+                                        </div>
+                                        <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700 focus-within:border-blue-500 transition-colors">
+                                            <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Player Digits</label>
+                                            <input 
+                                                type="number" 
+                                                min="1"
+                                                className="w-full bg-transparent text-white font-mono font-bold text-xl outline-none"
+                                                value={selectedNumber}
+                                                onChange={(e) => setSelectedNumber(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={submitPick}
+                                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 focus:ring-4 focus:ring-indigo-500/50 text-white font-black py-5 px-6 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:-translate-y-1 transition-all uppercase tracking-widest text-xl group"
                                     >
-                                        <option value="Gold" className="bg-slate-800">🥇 Gold</option>
-                                        <option value="Silver" className="bg-slate-800">🥈 Silver</option>
-                                        <option value="Bronze" className="bg-slate-800">🥉 Bronze</option>
-                                    </select>
-                                </div>
-                                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700 focus-within:border-blue-500 transition-colors">
-                                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Player Digits</label>
-                                    <input 
-                                        type="number" 
-                                        min="1"
-                                        placeholder="0"
-                                        className="w-full bg-transparent text-white font-mono font-bold text-xl outline-none"
-                                        value={selectedNumber}
-                                        onChange={(e) => setSelectedNumber(e.target.value)}
-                                    />
-                                </div>
-                            </div>
+                                        Transmit Pick
+                                    </button>
+                                </>
+                            )}
 
-                            <button 
-                                onClick={submitPick}
-                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-5 px-6 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] transform hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xl group"
-                            >
-                                <span className="text-blue-300 mr-2 group-hover:text-white transition-colors">↑</span>
-                                Transmit Pick
-                            </button>
+                            {/* Auction Request Phase (Top Priority or Matching Bid) */}
+                            {auctionRequest && (
+                                <div className="bg-slate-900/90 border border-blue-500/50 p-6 rounded-2xl shadow-2xl pulse-border slide-up text-center">
+                                    <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded inline-block mb-3 uppercase tracking-widest animate-pulse">Action Required</span>
+                                    <h4 className="text-xl font-bold text-white mb-2">{auctionRequest.instructions}</h4>
+                                    <p className="text-slate-400 mb-6 text-sm">Priority List Sequence</p>
+                                    
+                                    {auctionRequest.currentBid > 0 && (
+                                        <div className="bg-slate-950 p-4 rounded-xl mb-6 border border-red-500/30">
+                                            <p className="text-slate-400 text-sm">Challenger Bid</p>
+                                            <p className="text-red-400 font-mono text-3xl font-black">${auctionRequest.currentBid}M</p>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-4">
+                                        <button onClick={handleReject} className="flex-1 bg-slate-800 hover:bg-red-900/40 border border-slate-700 hover:border-red-500 text-slate-300 font-bold py-3 rounded-lg transition-all">Reject</button>
+                                        <button onClick={handleAccept} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all">
+                                            {auctionRequest.currentBid > 0 ? "Match Bid" : "Accept (Free)"}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Challenge Phase (Option to steal) */}
+                            {challengeRequest && (
+                                <div className="bg-slate-900/90 border border-emerald-500/50 p-6 rounded-2xl shadow-2xl pulse-bg slide-up text-center">
+                                    <span className="bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded inline-block mb-3 uppercase tracking-widest">Challenge Phase</span>
+                                    <h4 className="text-lg font-bold text-white mb-4">An opponent accepted this player. Place a challenge bid?</h4>
+                                    
+                                    <div className="flex items-center justify-center gap-2 mb-6">
+                                        <span className="text-emerald-400 text-2xl font-bold">$</span>
+                                        <input 
+                                            type="number"
+                                            value={bidAmount}
+                                            onChange={(e) => setBidAmount(Number(e.target.value))}
+                                            className="w-1/2 bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-white font-mono text-xl text-center focus:border-emerald-500 focus:outline-none"
+                                        />
+                                        <span className="text-emerald-400 text-2xl font-bold">M</span>
+                                    </div>
+
+                                    <div className="flex gap-4">
+                                        <button onClick={handleReject} className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-lg transition-all">Pass</button>
+                                        <button 
+                                            onClick={handleSendChallenge} 
+                                            disabled={bidAmount <= 0}
+                                            className="flex-1 bg-emerald-600 disabled:opacity-50 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg shadow-[0_0_15px_rgba(5,150,105,0.4)] transition-all"
+                                        >
+                                            Submit Bid
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     </div>
                 </div>
 
                 {/* Right Drawer (Terminal Logs) */}
                 <div className="w-full lg:w-1/4 glass-panel rounded-xl flex flex-col p-0 overflow-hidden border-t-4 border-t-indigo-500">
-                    <div className="bg-slate-900 px-5 py-3 border-b border-slate-700/50 flex items-center justify-between">
+                    <div className="bg-slate-900 px-5 py-3 border-b border-slate-700/50 flex flex-col">
                         <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Sever Terminal</h3>
-                        <div className="flex gap-1.5">
-                            <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
-                            <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-                        </div>
                     </div>
                     <div className="flex-grow p-5 overflow-y-auto space-y-3 font-mono text-xs">
                         {logs.map((log, i) => (
-                            <div key={i} className={`p-2 rounded ${log.includes('You') ? 'bg-blue-900/30 text-blue-300 border-l-2 border-blue-500' : 'text-slate-400'}`}>
-                                <span className="font-bold mr-2 text-slate-500">{new Date().toLocaleTimeString().split(' ')[0]}</span>
+                            <div key={i} className={`p-2 rounded ${log.includes('You') ? 'bg-blue-900/30 text-blue-300 border-l-2 border-blue-500' : 'text-slate-400 border-l-2 border-slate-700/50'}`}>
                                 {log}
                             </div>
                         ))}
-                        {logs.length === 0 && (
-                            <p className="text-slate-600 text-center mt-10">Awaiting incoming transmissions...</p>
-                        )}
                     </div>
                 </div>
 

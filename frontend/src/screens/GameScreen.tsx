@@ -6,7 +6,7 @@ import { socket } from '../services/socket';
 export default function GameScreen() {
     const { gameKey } = useParams();
     const navigate = useNavigate();
-    const { round, currentSection, updateGameState, userId, isTutorialMode } = useGameStore();
+    const { round, currentSection, updateGameState, userId, isTutorialMode, draftPool } = useGameStore();
 
     const [selectedSlab, setSelectedSlab] = useState('Gold');
     const [selectedNumber, setSelectedNumber] = useState('');
@@ -114,18 +114,41 @@ export default function GameScreen() {
             {/* Main Draft Area */}
             <main className="flex flex-col lg:flex-row p-6 gap-6 flex-grow overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
                 
-                {/* Left Drawer (Sections) */}
-                <div className="w-full lg:w-1/4 flex flex-col gap-4 overflow-y-auto pr-2">
-                    <div className={`p-5 rounded-xl border transition-all duration-500 ${currentSection === 'A' ? 'bg-blue-900/20 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)] pulse-border' : 'bg-slate-900/60 border-slate-700/50'}`}>
-                        <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700/50 pb-2 uppercase tracking-wider">Section A</h3>
-                        <div className="space-y-3 h-32 flex items-center justify-center text-slate-500">
-                            [Player Roster Data]
+                {/* Left Drawer (Draft Pool) */}
+                <div className="w-full lg:w-1/4 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar max-h-[85vh]">
+                    <div className="p-5 rounded-xl border bg-slate-900/80 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                        <h3 className="text-lg font-black text-amber-400 mb-3 border-b border-amber-500/30 pb-2 uppercase tracking-widest sticky top-0 bg-slate-900 z-10">🥇 Gold Tier</h3>
+                        <div className="space-y-2 flex flex-col">
+                            {draftPool.filter(p => p.slab === 'Gold').map((p: any) => (
+                                <div key={p.id} className={`flex justify-between items-center p-2 rounded border transition-colors ${p.teamId ? 'bg-slate-800/50 border-slate-700 opacity-50' : 'bg-slate-800/80 border-slate-600 hover:border-amber-500/50'}`}>
+                                    <span className={`font-medium ${p.teamId ? 'text-slate-500 line-through' : 'text-slate-200'}`}>{p.name}</span>
+                                    {p.teamId && <span className="text-xs text-red-500 font-bold uppercase">Sold</span>}
+                                </div>
+                            ))}
                         </div>
                     </div>
-                    <div className={`p-5 rounded-xl border transition-all duration-500 ${currentSection === 'B' ? 'bg-indigo-900/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.3)] pulse-border' : 'bg-slate-900/60 border-slate-700/50'}`}>
-                        <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700/50 pb-2 uppercase tracking-wider">Section B</h3>
-                        <div className="space-y-3 h-32 flex items-center justify-center text-slate-500">
-                            [Player Roster Data]
+
+                    <div className="p-5 rounded-xl border bg-slate-900/80 border-slate-400/50 shadow-[0_0_15px_rgba(148,163,184,0.15)]">
+                        <h3 className="text-lg font-black text-slate-300 mb-3 border-b border-slate-400/30 pb-2 uppercase tracking-widest sticky top-0 bg-slate-900 z-10">🥈 Silver Tier</h3>
+                        <div className="space-y-2 flex flex-col">
+                            {draftPool.filter(p => p.slab === 'Silver').map((p: any) => (
+                                <div key={p.id} className={`flex justify-between items-center p-2 rounded border transition-colors ${p.teamId ? 'bg-slate-800/50 border-slate-700 opacity-50' : 'bg-slate-800/80 border-slate-600 hover:border-slate-400/50'}`}>
+                                    <span className={`font-medium ${p.teamId ? 'text-slate-500 line-through' : 'text-slate-200'}`}>{p.name}</span>
+                                    {p.teamId && <span className="text-xs text-red-500 font-bold uppercase">Sold</span>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="p-5 rounded-xl border bg-slate-900/80 border-orange-700/50 shadow-[0_0_15px_rgba(194,65,12,0.15)]">
+                        <h3 className="text-lg font-black text-orange-500 mb-3 border-b border-orange-700/30 pb-2 uppercase tracking-widest sticky top-0 bg-slate-900 z-10">🥉 Bronze Tier</h3>
+                        <div className="space-y-2 flex flex-col">
+                            {draftPool.filter(p => p.slab === 'Bronze').map((p: any) => (
+                                <div key={p.id} className={`flex justify-between items-center p-2 rounded border transition-colors ${p.teamId ? 'bg-slate-800/50 border-slate-700 opacity-50' : 'bg-slate-800/80 border-slate-600 hover:border-orange-700/50'}`}>
+                                    <span className={`font-medium ${p.teamId ? 'text-slate-500 line-through' : 'text-slate-200'}`}>{p.name}</span>
+                                    {p.teamId && <span className="text-xs text-red-500 font-bold uppercase">Sold</span>}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

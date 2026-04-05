@@ -294,8 +294,16 @@ export class GameEngine {
     }
 
     private allocatePlayer(gameKey: string, teamId: string, playerId: string, price: number, reason: string) {
+       const state = activeGames[gameKey];
+       if (state) {
+           const pIndex = state.draftPool.findIndex((p: any) => p.id === playerId);
+           if (pIndex !== -1) {
+               state.draftPool[pIndex].teamId = teamId;
+           }
+       }
        this.io.to(gameKey).emit('playerAllocated', { teamId, playerId, price, reason });
-       // Note: In reality, we'd update `state.draftPool` and `state.teams` locally, and enqueue a Prisma update.
+       if (state) this.io.to(gameKey).emit('gameStateUpdate', state);
+       // Note: In reality, we'd enqueue a Prisma update.
     }
 
     private endRound(gameKey: string) {

@@ -65,20 +65,16 @@ app.post('/api/create-cpu-game', async (req, res) => {
             teamsToCreate.push({ name: `CPU Bot_${i}`, isCPU: true, section: (i % 2 === 0) ? 'A' : 'B', purse: 100 });
         }
 
-        // Mock a draft pool based on PRD
+        // Mock a draft pool based on PRD (Big List)
         const draftPool: any[] = [];
-        const slabs = ['Gold', 'Silver', 'Bronze'];
-        let playerId = 1;
-        slabs.forEach(slab => {
-            const count = slab === 'Gold' ? 20 : slab === 'Silver' ? 30 : 50;
-            for(let j=0; j<count; j++) {
-                draftPool.push({
-                    name: `Player_${slab}_${j}`,
-                    slab: slab,
-                    perk: slab === 'Gold' ? 'Premium Match Winner' : 'Standard Perk'
-                });
-            }
-        });
+        
+        const goldCricketers = ['Virat Kohli', 'Rohit Sharma', 'Jasprit Bumrah', 'Pat Cummins', 'MS Dhoni', 'AB de Villiers', 'Lasith Malinga', 'Chris Gayle', 'Rashid Khan', 'Ben Stokes', 'Glenn Maxwell', 'Jofra Archer', 'Trent Boult', 'Kagiso Rabada', 'Jos Buttler', 'Hardik Pandya', 'Sunil Narine', 'Kieron Pollard', 'Mitchell Starc', 'Babar Azam'];
+        const silverCricketers = ['Kane Williamson', 'David Warner', 'Suryakumar Yadav', 'Quinton de Kock', 'Faf du Plessis', 'Andre Russell', 'KL Rahul', 'Rishabh Pant', 'Ravindra Jadeja', 'Shaheen Afridi', 'Mohammad Rizwan', 'Eoin Morgan', 'Shikhar Dhawan', 'Shreyas Iyer', 'Sam Curran', 'Nicholas Pooran', 'Mujeeb Ur Rahman', 'Yuzvendra Chahal', 'Wanindu Hasaranga', 'Liam Livingstone', 'Tim Southee', 'Lockie Ferguson', 'Adam Zampa', 'Haris Rauf', 'Jason Holder', 'Krunal Pandya', 'Marcus Stoinis', 'Glenn Phillips', 'Anrich Nortje', 'Mustafizur Rahman'];
+        const bronzeCricketers = ['David Miller', 'Shubman Gill', 'Ruturaj Gaikwad', 'Deepak Chahar', 'Shardul Thakur', 'T Natarajan', 'Rahul Tewatia', 'Moeen Ali', 'Jonny Bairstow', 'Rahmanullah Gurbaz', 'Mitchell Marsh', 'Devon Conway', 'Maheesh Theekshana', 'Matheesha Pathirana', 'Cameron Green', 'Harry Brook', 'Rinku Singh', 'Yashasvi Jaiswal', 'Mohammed Siraj', 'Ishan Kishan', 'Aiden Markram', 'Heinrich Klaasen', 'Marco Jansen', 'Tristan Stubbs', 'Phil Salt', 'Fazalhaq Farooqi', 'Sikandar Raza', 'Rovman Powell', 'Shimron Hetmyer', 'Kyle Mayers', 'Will Jacks', 'Reece Topley', 'Mark Wood', 'Naveen-ul-Haq', 'Noor Ahmad', 'Avesh Khan', 'Arshdeep Singh', 'Axar Patel', 'Venkatesh Iyer', 'Varun Chakaravarthy', 'Nitish Rana', 'Prithvi Shaw', 'Khaleel Ahmed', 'Mukesh Kumar', 'Mohit Sharma', 'Shahrukh Khan', 'Shivam Dube', 'Washington Sundar', 'Tushar Deshpande', 'Deepak Hooda'];
+
+        goldCricketers.forEach(name => draftPool.push({ name, slab: 'Gold', perk: 'Premium Match Winner' }));
+        silverCricketers.forEach(name => draftPool.push({ name, slab: 'Silver', perk: 'Consistent Performer' }));
+        bronzeCricketers.forEach(name => draftPool.push({ name, slab: 'Bronze', perk: 'Hidden Gem' }));
 
         const game = await prisma.game.create({
             data: {

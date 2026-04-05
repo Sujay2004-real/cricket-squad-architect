@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.ts",
-    "build": "prisma generate && tsc",
+    "build": "prisma generate && prisma db push --accept-data-loss && tsc",
     "start": "node index.js"
   },
   "keywords": [],

@@ -42,6 +42,58 @@ app.post('/api/suggest-name', async (req, res) => {
   }
 });
 
+// CPU Matchmaker & DB Spawner
+app.post('/api/create-cpu-game', async (req, res) => {
+    try {
+        const { userId, teamName } = req.body;
+        
+        // Ensure user exists (mocking guest auth)
+        let user = await prisma.user.findFirst({ where: { username: userId || 'Guest' } });
+        if (!user) {
+            user = await prisma.user.create({ data: { username: userId || `Guest_${Math.floor(Math.random()*1000)}` } });
+        }
+
+        const gameKey = Math.random().toString(36).substring(2, 7).toUpperCase();
+        
+        // Build 1 Human Team + 9 CPU Teams
+        const teamsToCreate = [];
+        teamsToCreate.push({ name: teamName || 'Human Team', isCPU: false, section: 'A', purse: 100, userId: user.id });
+        for(let i=1; i<=9; i++) {
+            teamsToCreate.push({ name: `CPU Bot_${i}`, isCPU: true, section: (i % 2 === 0) ? 'A' : 'B', purse: 100 });
+        }
+
+        // Mock a draft pool based on PRD
+        const draftPool: any[] = [];
+        const slabs = ['Gold', 'Silver', 'Bronze'];
+        let playerId = 1;
+        slabs.forEach(slab => {
+            const count = slab === 'Gold' ? 20 : slab === 'Silver' ? 30 : 50;
+            for(let j=0; j<count; j++) {
+                draftPool.push({
+                    name: `Player_${slab}_${j}`,
+                    slab: slab,
+                    perk: slab === 'Gold' ? 'Premium Match Winner' : 'Standard Perk'
+                });
+            }
+        });
+
+        const game = await prisma.game.create({
+            data: {
+                gameKey,
+                hostId: user.id,
+                teams: { create: teamsToCreate },
+                draftPool: { create: draftPool }
+            }
+        });
+
+        res.json({ success: true, gameKey: game.gameKey });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to create CPU Game Environment" });
+    }
+});
+
 // Socket.IO Lobbies and Game State
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);

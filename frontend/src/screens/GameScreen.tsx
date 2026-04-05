@@ -6,7 +6,7 @@ import { socket } from '../services/socket';
 export default function GameScreen() {
     const { gameKey } = useParams();
     const navigate = useNavigate();
-    const { round, currentSection, updateGameState, userId } = useGameStore();
+    const { round, currentSection, updateGameState, userId, isTutorialMode } = useGameStore();
 
     const [selectedSlab, setSelectedSlab] = useState('Gold');
     const [selectedNumber, setSelectedNumber] = useState('');
@@ -247,6 +247,22 @@ export default function GameScreen() {
                 </div>
 
             </main>
+
+            {/* Interactive Tutorial Coach Overlay */}
+            {isTutorialMode && (
+                <div className="fixed bottom-12 right-12 z-50 drop-shadow-2xl fade-in slide-up hidden md:block">
+                    <div className="bg-slate-900/90 backdrop-blur-md p-6 border-2 border-amber-500 rounded-3xl max-w-sm relative shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                        <div className="absolute -top-8 -left-8 text-6xl drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">🤖</div>
+                        <h3 className="text-amber-400 font-black uppercase tracking-widest mb-3 pl-8 border-b border-amber-500/30 pb-2">Draft Coach</h3>
+                        <p className="text-white text-sm leading-relaxed font-medium">
+                            {!auctionRequest && !challengeRequest && "Welcome Rookie! Pick a priority slab (Higher tier players are rarer) and guess a secret number. The closer your number is to the server's random draw, the higher your priority! Hit Transmit."}
+                            {auctionRequest && !auctionRequest.currentBid && "Look at that! The server drew a player, and your number was closest! You can Accept them for free. (If you reject 3 times consecutively, the server forces you to pick!)"}
+                            {auctionRequest && auctionRequest.currentBid > 0 && "High stakes! An opponent wants this player and placed a Challenge Bid! You must either Match the bid to keep them, or Reject and save your purse."}
+                            {challengeRequest && "An opponent had higher priority and accepted this player for free. You have one chance to steal them by submitting a Challenge Bid!"}
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

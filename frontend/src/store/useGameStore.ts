@@ -26,10 +26,12 @@ interface GameState {
   currentSection: 'A' | 'B';
   turnState: 'WAITING_FOR_PICKS' | 'AUCTION_PHASE' | 'COMPLETED';
   teams: Team[];
+  isTutorialMode: boolean;
   
   // Actions
   setUserId: (id: string) => void;
   setGameKey: (key: string) => void;
+  setTutorialMode: (val: boolean) => void;
   updateGameState: (state: Partial<GameState>) => void;
 }
 
@@ -40,8 +42,10 @@ export const useGameStore = create<GameState>((set) => ({
   currentSection: 'A',
   turnState: 'WAITING_FOR_PICKS',
   teams: [],
+  isTutorialMode: false,
   
   setUserId: (id) => set({ userId: id }),
   setGameKey: (key) => set({ gameKey: key }),
+  setTutorialMode: (val) => set({ isTutorialMode: val }),
   updateGameState: (state) => set((prev) => ({ ...prev, ...state })),
 }));

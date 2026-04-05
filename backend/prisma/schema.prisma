@@ -24,7 +24,7 @@ model Game {
   status          String   @default("LOBBY") // LOBBY, IN_PROGRESS, COMPLETED
   
   maxTeams        Int      @default(10)
-  slotsPerTeam    Int      @default(11)
+  slotsPerTeam    Int      @default(27)
   initialPurse    Int      @default(100)
   
   teams           Team[]
@@ -45,7 +45,8 @@ model Team {
   userId            String?  // Null if CPU
   user              User?    @relation(fields: [userId], references: [id])
   isCPU             Boolean  @default(false)
-  
+  aiDifficulty      String?  // null for human, "easy" | "medium" | "hard" for CPU
+
   section           String   // "A" or "B"
   purse             Int      @default(100)
   
@@ -60,6 +61,7 @@ model DraftPlayer {
   name            String
   slab            String   // "gold", "silver", "bronze", etc
   perk            String
+  premium         Boolean  @default(false)
   accomplishments String?
   
   teamId          String?  // Null if not drafted

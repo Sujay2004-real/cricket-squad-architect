@@ -166,9 +166,9 @@ export default function GameScreen() {
                 </div>
 
                 {/* Center Console (Action & Timer) */}
-                <div className="w-full lg:w-2/4 flex flex-col gap-6">
-                    <div className="glass-card flex-grow relative overflow-hidden p-8 flex flex-col justify-center">
-                        <div className="relative z-10 w-full max-w-md mx-auto">
+                <div className={`w-full lg:w-2/4 flex flex-col gap-6 transition-all duration-500 ${isTutorialMode && tutorialStep < 5 ? 'z-50 relative' : ''}`}>
+                    <div className="glass-card flex-grow relative p-8 flex flex-col justify-center">
+                        <div className="relative w-full max-w-md mx-auto">
                             <h3 className="text-2xl font-black text-center text-white mb-8 uppercase tracking-widest glow-text">Mission Control</h3>
                             
                             {/* Standard Draft Pick Mode */}

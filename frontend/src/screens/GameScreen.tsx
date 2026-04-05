@@ -15,16 +15,16 @@ export default function GameScreen() {
     useEffect(() => {
         if (gameKey) {
             socket.emit('joinLobby', gameKey);
-            setLogs(prev => [...prev, `[System] Connected to game server room: ${gameKey}`]);
+            setLogs(prev => [`[System] Secure connection established to Draft Server: ${gameKey}`, ...prev]);
         }
 
         socket.on('gameStateUpdate', (state) => {
              updateGameState(state);
-             setLogs(prev => [...prev, `[System] Game state synchronized.`]);
+             setLogs(prev => [`[System] Matrix synchronized.`, ...prev]);
         });
         
         socket.on('bidUpdate', (data) => {
-             setLogs(prev => [...prev, `[Auction] ${data.message}`]);
+             setLogs(prev => [`[Auction] ${data.message}`, ...prev]);
         });
 
         return () => {
@@ -35,98 +35,142 @@ export default function GameScreen() {
 
     const submitPick = () => {
         socket.emit('submitPick', { gameKey, selectedSlab, selectedNumber });
-        setLogs(prev => [...prev, `[You] Submitted pick for ${selectedSlab} ${selectedNumber}`]);
+        setLogs(prev => [`[You] Pick submitted: ${selectedSlab} #${selectedNumber}`, ...prev]);
     };
 
     return (
         <div className="flex flex-col h-screen fade-in">
-            <header className="bg-gray-800 p-3 flex justify-between items-center shadow-lg">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold">Round {round}</h2>
+            {/* Top Dashboard Header */}
+            <header className="bg-slate-900 border-b border-slate-700/80 p-4 flex justify-between items-center shadow-lg z-10 sticky top-0">
+                <div className="flex items-center gap-6">
+                    <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 uppercase tracking-widest px-4 py-2 bg-slate-800/50 rounded-lg border border-slate-700">
+                        Round {round}
+                    </h2>
                     <button 
                         onClick={() => navigate('/')}
-                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-sm transition duration-300"
+                        className="text-slate-400 hover:text-red-400 font-bold text-sm transition-colors uppercase tracking-widest flex items-center gap-2"
                     >
-                        Quit Game
+                        <span className="text-xl">⏻</span> Disconnect
                     </button>
                 </div>
-                <div className="text-center">
-                    <p className="text-lg font-semibold">Section {currentSection}'s Turn</p>
-                    <p className="text-sm text-gray-400">Waiting for picks...</p>
+                
+                <div className="flex-1 flex justify-center">
+                    <div className="glass-panel px-8 py-2 rounded-full border border-blue-500/30 flex items-center gap-4 bg-slate-900/80">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                        <p className="text-xl font-bold text-white uppercase tracking-widest">
+                            <span className="text-blue-400 mr-2">Section {currentSection}</span> Live
+                        </p>
+                    </div>
                 </div>
-                <div className="text-right">
-                    <h3 className="text-lg font-semibold">Your Team</h3>
-                    <p className="text-green-400 font-mono">Purse: $100M</p>
+
+                <div className="text-right glass-panel px-6 py-2 rounded-xl flex items-center gap-4">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Purse</h3>
+                    <p className="text-green-400 font-mono text-2xl font-black">$100M</p>
                 </div>
             </header>
 
-            <main className="flex flex-col lg:flex-row p-4 gap-4 flex-grow overflow-hidden">
-                <div className="w-full lg:w-1/4 overflow-y-auto">
-                    <div className={`mb-4 p-4 rounded-lg ${currentSection === 'A' ? 'bg-gray-800 border-l-4 border-blue-500' : 'bg-gray-800/50'}`}>
-                        <h3 className="text-xl font-bold mb-2 border-b border-gray-700 pb-2">Section A</h3>
-                        <div className="space-y-3">
-                            {/* Render Section A Teams */}
+            {/* Main Draft Area */}
+            <main className="flex flex-col lg:flex-row p-6 gap-6 flex-grow overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+                
+                {/* Left Drawer (Sections) */}
+                <div className="w-full lg:w-1/4 flex flex-col gap-4 overflow-y-auto pr-2">
+                    <div className={`p-5 rounded-xl border transition-all duration-500 ${currentSection === 'A' ? 'bg-blue-900/20 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.3)] pulse-border' : 'bg-slate-900/60 border-slate-700/50'}`}>
+                        <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700/50 pb-2 uppercase tracking-wider flex items-center justify-between">
+                            Section A 
+                            {currentSection === 'A' && <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded">ACTIVE</span>}
+                        </h3>
+                        <div className="space-y-3 h-32 flex items-center justify-center text-slate-500">
+                            [Player Roster Data]
                         </div>
                     </div>
-                    <div className={`p-4 rounded-lg ${currentSection === 'B' ? 'bg-gray-800 border-l-4 border-blue-500' : 'bg-gray-800/50'}`}>
-                        <h3 className="text-xl font-bold mb-2 border-b border-gray-700 pb-2">Section B</h3>
-                        <div className="space-y-3">
-                            {/* Render Section B Teams */}
+                    
+                    <div className={`p-5 rounded-xl border transition-all duration-500 ${currentSection === 'B' ? 'bg-indigo-900/20 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.3)] pulse-border' : 'bg-slate-900/60 border-slate-700/50'}`}>
+                        <h3 className="text-xl font-bold text-white mb-4 border-b border-slate-700/50 pb-2 uppercase tracking-wider flex items-center justify-between">
+                            Section B
+                            {currentSection === 'B' && <span className="text-xs bg-indigo-500 text-white px-2 py-1 rounded">ACTIVE</span>}
+                        </h3>
+                        <div className="space-y-3 h-32 flex items-center justify-center text-slate-500">
+                            [Player Roster Data]
                         </div>
                     </div>
                 </div>
 
-                <div className="w-full lg:w-1/2 flex flex-col gap-4">
-                    <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-                        <h3 className="text-xl font-bold mb-4 text-center">Your Turn: Make Your Selection</h3>
+                {/* Center Console (Action & Timer) */}
+                <div className="w-full lg:w-2/4 flex flex-col gap-6">
+                    
+                    <div className="glass-card flex-grow relative overflow-hidden p-8 flex flex-col justify-center">
+                        {/* Huge background watermark */}
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[15rem] font-black text-slate-800/10 z-0 pointer-events-none sel-none">
+                            {currentSection}
+                        </div>
                         
-                        <div className="w-full bg-gray-700 rounded-full h-2.5 mb-4">
-                            <div className="bg-blue-500 h-2.5 rounded-full transition-all duration-1000" style={{ width: '100%' }}></div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Choose a Slab</label>
-                                <select 
-                                    className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={selectedSlab}
-                                    onChange={(e) => setSelectedSlab(e.target.value)}
-                                >
-                                    <option value="Gold">Gold</option>
-                                    <option value="Silver">Silver</option>
-                                    <option value="Bronze">Bronze</option>
-                                </select>
+                        <div className="relative z-10 w-full max-w-md mx-auto">
+                            <h3 className="text-2xl font-black text-center text-white mb-8 uppercase tracking-widest glow-text">Mission Control</h3>
+                            
+                            <div className="w-full bg-slate-950 rounded-full h-3 mb-8 border border-slate-700 shadow-inner overflow-hidden">
+                                <div className="bg-gradient-to-r from-green-500 via-yellow-400 to-red-500 h-full w-full rounded-full animate-[pulse_1s_ease-in-out_infinite]" style={{ width: '100%' }}></div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Choose a Number</label>
-                                <input 
-                                    type="number" 
-                                    min="1"
-                                    className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={selectedNumber}
-                                    onChange={(e) => setSelectedNumber(e.target.value)}
-                                />
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700 focus-within:border-blue-500 transition-colors">
+                                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Priority Slab</label>
+                                    <select 
+                                        className="w-full bg-transparent text-white font-bold text-lg outline-none cursor-pointer"
+                                        value={selectedSlab}
+                                        onChange={(e) => setSelectedSlab(e.target.value)}
+                                    >
+                                        <option value="Gold" className="bg-slate-800">🥇 Gold</option>
+                                        <option value="Silver" className="bg-slate-800">🥈 Silver</option>
+                                        <option value="Bronze" className="bg-slate-800">🥉 Bronze</option>
+                                    </select>
+                                </div>
+                                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700 focus-within:border-blue-500 transition-colors">
+                                    <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Player Digits</label>
+                                    <input 
+                                        type="number" 
+                                        min="1"
+                                        placeholder="0"
+                                        className="w-full bg-transparent text-white font-mono font-bold text-xl outline-none"
+                                        value={selectedNumber}
+                                        onChange={(e) => setSelectedNumber(e.target.value)}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <button 
-                            onClick={submitPick}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-md mt-4 transition duration-300"
-                        >
-                            Submit Pick
-                        </button>
-                    </div>
 
-                    <div className="bg-gray-800 p-6 rounded-lg shadow-lg flex-grow flex items-center justify-center text-center">
-                        <p className="text-gray-400 text-lg">Waiting for selections...</p>
+                            <button 
+                                onClick={submitPick}
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-5 px-6 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] transform hover:-translate-y-1 transition-all duration-300 uppercase tracking-widest text-xl group"
+                            >
+                                <span className="text-blue-300 mr-2 group-hover:text-white transition-colors">↑</span>
+                                Transmit Pick
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="w-full lg:w-1/4 bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col">
-                    <h3 className="text-xl font-bold mb-2 border-b border-gray-700 pb-2">Game Log</h3>
-                    <div className="flex-grow overflow-y-auto space-y-2 text-sm pr-2 text-gray-300">
-                        {logs.map((log, i) => <p key={i}>{log}</p>)}
+                {/* Right Drawer (Terminal Logs) */}
+                <div className="w-full lg:w-1/4 glass-panel rounded-xl flex flex-col p-0 overflow-hidden border-t-4 border-t-indigo-500">
+                    <div className="bg-slate-900 px-5 py-3 border-b border-slate-700/50 flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Sever Terminal</h3>
+                        <div className="flex gap-1.5">
+                            <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
+                            <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+                        </div>
+                    </div>
+                    <div className="flex-grow p-5 overflow-y-auto space-y-3 font-mono text-xs">
+                        {logs.map((log, i) => (
+                            <div key={i} className={`p-2 rounded ${log.includes('You') ? 'bg-blue-900/30 text-blue-300 border-l-2 border-blue-500' : 'text-slate-400'}`}>
+                                <span className="font-bold mr-2 text-slate-500">{new Date().toLocaleTimeString().split(' ')[0]}</span>
+                                {log}
+                            </div>
+                        ))}
+                        {logs.length === 0 && (
+                            <p className="text-slate-600 text-center mt-10">Awaiting incoming transmissions...</p>
+                        )}
                     </div>
                 </div>
+
             </main>
         </div>
     );

@@ -32,11 +32,22 @@ const HomeScreen: React.FC = () => {
             body: JSON.stringify({ userId, teamName })
         });
         const data = await response.json();
-        if (data.gameKey) {
+        
+        if (data.error) {
+            alert(`Server Error: ${data.error}. Check server logs or configure Prisma appropriately.`);
+            setShowCpuModal(false);
+            return;
+        }
+
+        if (data.gameKey && data.teamId) {
+            setUserId(data.teamId); // Storing the Human Team ID so the game knows who we are
+            setShowCpuModal(false);
             navigate(`/game/${data.gameKey}`);
         }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Failed to boot CPU Game", e);
+        alert(`Network Error: Make sure backend is running or VITE_BACKEND_URL is set correctly. Details: ${e.message}`);
+        setShowCpuModal(false);
     }
   };
 

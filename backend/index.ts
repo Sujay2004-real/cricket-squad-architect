@@ -57,7 +57,10 @@ app.post('/api/create-cpu-game', async (req, res) => {
         
         // Build 1 Human Team + 9 CPU Teams
         const teamsToCreate = [];
-        teamsToCreate.push({ name: teamName || 'Human Team', isCPU: false, section: 'A', purse: 100, userId: user.id });
+        const crypto = require('crypto');
+        const humanTeamId = crypto.randomUUID();
+        
+        teamsToCreate.push({ id: humanTeamId, name: teamName || 'Human Team', isCPU: false, section: 'A', purse: 100, userId: user.id });
         for(let i=1; i<=9; i++) {
             teamsToCreate.push({ name: `CPU Bot_${i}`, isCPU: true, section: (i % 2 === 0) ? 'A' : 'B', purse: 100 });
         }
@@ -86,11 +89,11 @@ app.post('/api/create-cpu-game', async (req, res) => {
             }
         });
 
-        res.json({ success: true, gameKey: game.gameKey });
+        res.json({ success: true, gameKey: game.gameKey, teamId: humanTeamId });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        res.status(500).json({ error: "Failed to create CPU Game Environment" });
+        res.status(500).json({ error: error.message || String(error) });
     }
 });
 

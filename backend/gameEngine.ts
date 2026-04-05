@@ -53,7 +53,7 @@ export class GameEngine {
         if (!game) return;
 
         const rejectionCounters: Record<string, number> = {};
-        game.teams.forEach(t => rejectionCounters[t.id] = 0);
+        game.teams.forEach((t: any) => rejectionCounters[t.id] = 0);
 
         activeGames[gameKey] = {
             currentRound: 1,
@@ -77,14 +77,16 @@ export class GameEngine {
         state.currentPicks = {};
         
         // Emulate CPU Picks instantly if there are CPU teams in the current section
-        state.teams.filter(t => t.isCPU && t.section === state.currentSection).forEach(cpuTeam => {
+        state.teams.filter((t: any) => t.isCPU && t.section === state.currentSection).forEach((cpuTeam: any) => {
              // CPU AI (Random Number Strategist)
              const slabs = ['Gold', 'Silver', 'Bronze'];
-             const chosenSlab = slabs[Math.floor(Math.random() * slabs.length)];
-             const maxNum = state.draftPool.filter(p => p.slab === chosenSlab && !p.teamId).length || 10;
+             const chosenSlab = slabs[Math.floor(Math.random() * slabs.length)] || 'Bronze';
+             const maxNum = state.draftPool.filter((p: any) => p.slab === chosenSlab && !p.teamId).length || 10;
              const chosenNum = crypto.randomInt(1, maxNum + 1);
              
-             state.currentPicks[cpuTeam.id] = { teamId: cpuTeam.id, slab: chosenSlab, number: chosenNum };
+             if (cpuTeam.id) {
+                 state.currentPicks[cpuTeam.id as string] = { teamId: cpuTeam.id as string, slab: chosenSlab, number: chosenNum };
+             }
         });
 
         this.io.to(gameKey).emit('requestPicks', {
@@ -104,8 +106,8 @@ export class GameEngine {
         state.currentPicks[teamId] = { teamId, slab, number };
         
         // If all human teams in section have picked, process immediately
-        const sectionHumanTeams = state.teams.filter(t => t.section === state.currentSection && !t.isCPU);
-        const hasAllPicks = sectionHumanTeams.every(t => state.currentPicks[t.id]);
+        const sectionHumanTeams = state.teams.filter((t: any) => t.section === state.currentSection && !t.isCPU);
+        const hasAllPicks = sectionHumanTeams.every((t: any) => state.currentPicks[t.id]);
         
         if (hasAllPicks) {
             this.processPicks(gameKey);
@@ -136,7 +138,7 @@ export class GameEngine {
         }
 
         const validPicks = picks.filter(p => p.slab === highestSlab);
-        const slabPlayers = state.draftPool.filter(p => p.slab === highestSlab && !p.teamId);
+        const slabPlayers = state.draftPool.filter((p: any) => p.slab === highestSlab && !p.teamId);
         
         if (slabPlayers.length === 0) return this.endRound(gameKey);
 
@@ -147,9 +149,10 @@ export class GameEngine {
         // Exact Match Logic (PRD 3.2.5)
         const exactMatches = validPicks.filter(p => p.number === randgen);
         if (exactMatches.length > 0) {
-             // If multiple matched exact, pick randomly among them (or first)
              const winner = exactMatches[0];
-             this.allocatePlayer(gameKey, winner.teamId, selectedPlayer.id, 0, "Exact Match");
+             if (winner) {
+                 this.allocatePlayer(gameKey, winner.teamId, selectedPlayer.id, 0, "Exact Match");
+             }
              return this.endRound(gameKey);
         }
 
@@ -181,10 +184,13 @@ export class GameEngine {
         }
 
         const activeTeamId = ad.priorityList[ad.currentPriorityIndex];
-        const teamObj = state.teams.find(t => t.id === activeTeamId);
+        if (!activeTeamId) return this.endRound(gameKey);
+        
+        const teamObj = state.teams.find((t: any) => t.id === activeTeamId);
         
         // Forced Pick Injection (PRD 3.2.5)
-        if (state.rejectionCounters[activeTeamId] >= 2 && !ad.forcedPicksTracker[activeTeamId]) {
+        const rejections = state.rejectionCounters[activeTeamId] || 0;
+        if (rejections >= 2 && !ad.forcedPicksTracker[activeTeamId]) {
             ad.forcedPicksTracker[activeTeamId] = true;
             this.io.to(gameKey).emit('auctionEvent', `Team ${teamObj?.name} triggered FORCED PICK on consecutive rejections.`);
             this.handleAccept(gameKey, activeTeamId, true); // Forced auto-accept
@@ -230,18 +236,20 @@ export class GameEngine {
         } else {
              // Free Accept phase. Now we must ask next priority teams if they want to challenge!
              const challengers = ad.priorityList.slice(ad.currentPriorityIndex + 1);
-             if (challengers.length > 0) {
+             const challengerId = challengers.length > 0 ? challengers[0] : null;
+
+             if (challengerId) {
                  this.io.to(gameKey).emit('requestChallenge', {
                      targetPlayer: ad.targetPlayer,
                      currentOwnerId: teamId,
-                     challengerId: challengers[0] // Simplify: only next in line can challenge
+                     challengerId: challengerId 
                  });
                  // Handle CPU challenger
-                 const chalTeam = state.teams.find(t => t.id === challengers[0]);
+                 const chalTeam = state.teams.find((t: any) => t.id === challengerId);
                  if (chalTeam?.isCPU) {
                      setTimeout(() => {
-                         if (Math.random() > 0.6) this.handleChallengeBid(gameKey, challengers[0], teamId, 5);
-                         else this.handleReject(gameKey, challengers[0]); // Pass on challenge
+                         if (Math.random() > 0.6) this.handleChallengeBid(gameKey, challengerId, teamId, 5);
+                         else this.handleReject(gameKey, challengerId); // Pass on challenge
                      }, 3000);
                  }
              } else {
@@ -271,10 +279,14 @@ export class GameEngine {
 
         if (ad.latestBidder) {
              // Team rejected matching the challenge bid. So the challenger wins.
-             this.allocatePlayer(gameKey, ad.latestBidder, ad.targetPlayer.id, ad.currentBid, "Won Challenge");
+             const winnerId = ad.latestBidder;
+             this.allocatePlayer(gameKey, winnerId, ad.targetPlayer.id, ad.currentBid, "Won Challenge");
              return this.endRound(gameKey);
         } else {
              // Free Accept rejected.
+             if (state.rejectionCounters[teamId] === undefined) {
+                 state.rejectionCounters[teamId] = 0;
+             }
              state.rejectionCounters[teamId] += 1;
              ad.currentPriorityIndex++;
              this.nextAuctionPhase(gameKey);

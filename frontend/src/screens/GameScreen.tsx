@@ -16,6 +16,7 @@ export default function GameScreen() {
     const [auctionRequest, setAuctionRequest] = useState<any>(null);
     const [challengeRequest, setChallengeRequest] = useState<any>(null);
     const [bidAmount, setBidAmount] = useState<number>(0);
+    const [tutorialStep, setTutorialStep] = useState(0);
 
     // Provide a default team ID since the user might not have one hardcoded locally in this mockup
     const defaultMyTeamId = userId || 'team-1';
@@ -38,6 +39,7 @@ export default function GameScreen() {
              // Example data: { activeTeamId, instructions, targetPlayer, currentBid }
              if (data.activeTeamId === defaultMyTeamId) {
                  setAuctionRequest(data);
+                 if (isTutorialMode) setTutorialStep(4);
              } else {
                  setLogs(prev => [`[Auction] Waiting for Team ${data.activeTeamId} to respond...`, ...prev]);
              }
@@ -67,23 +69,33 @@ export default function GameScreen() {
     const submitPick = () => {
         socket.emit('submitPick', { gameKey, teamId: defaultMyTeamId, slab: selectedSlab, number: Number(selectedNumber) });
         setLogs(prev => [`[You] Pick transmitted: ${selectedSlab} #${selectedNumber}`, ...prev]);
+        if (isTutorialMode) setTutorialStep(3); // Wait for the server to reply
     };
 
     const handleAccept = () => {
         socket.emit('actionAccept', { gameKey, teamId: defaultMyTeamId });
         setAuctionRequest(null);
+        if (isTutorialMode && tutorialStep >= 3) {
+            useGameStore.getState().setTutorialMode(false);
+        }
     };
 
     const handleReject = () => {
         socket.emit('actionReject', { gameKey, teamId: defaultMyTeamId });
         setAuctionRequest(null);
         setChallengeRequest(null);
+        if (isTutorialMode && tutorialStep >= 3) {
+            useGameStore.getState().setTutorialMode(false);
+        }
     };
 
     const handleSendChallenge = () => {
         socket.emit('actionChallenge', { gameKey, teamId: defaultMyTeamId, originalId: challengeRequest.currentOwnerId, bidAmount });
         setChallengeRequest(null);
         setLogs(prev => [`[You] Placed a challenge bid of $${bidAmount}M!`, ...prev]);
+        if (isTutorialMode && tutorialStep >= 3) {
+            useGameStore.getState().setTutorialMode(false);
+        }
     };
 
     return (
@@ -165,42 +177,74 @@ export default function GameScreen() {
                                     <div className="w-full bg-slate-950 rounded-full h-3 mb-8 border border-slate-700 shadow-inner overflow-hidden">
                                         <div className="bg-gradient-to-r from-emerald-400 via-amber-400 to-red-500 h-full w-full rounded-full animate-[pulse_1s_ease-in-out_infinite]" style={{ width: '100%' }}></div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                        <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700 focus-within:border-blue-500 transition-colors">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 relative">
+                                        <div className={`bg-slate-900/80 p-4 rounded-xl border border-slate-700 transition-all ${isTutorialMode && tutorialStep === 0 ? 'z-50 relative ring-4 ring-amber-500 scale-105 bg-slate-800' : ''}`}>
                                             <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Priority Slab</label>
                                             <select 
                                                 className="w-full bg-transparent text-white font-bold text-lg outline-none cursor-pointer"
                                                 value={selectedSlab}
-                                                onChange={(e) => setSelectedSlab(e.target.value)}
+                                                onChange={(e) => {
+                                                    setSelectedSlab(e.target.value);
+                                                    if (isTutorialMode && tutorialStep === 0) setTutorialStep(1);
+                                                }}
                                             >
                                                 <option value="Gold" className="bg-slate-800">🥇 Gold</option>
                                                 <option value="Silver" className="bg-slate-800">🥈 Silver</option>
                                                 <option value="Bronze" className="bg-slate-800">🥉 Bronze</option>
                                             </select>
+                                            {isTutorialMode && tutorialStep === 0 && (
+                                                <div className="absolute top-full mt-4 left-0 w-[250px] bg-amber-500 text-slate-900 p-4 rounded-xl shadow-2xl font-bold animate-bounce z-50">
+                                                    <div className="absolute -top-2 left-6 w-4 h-4 bg-amber-500 rotate-45"></div>
+                                                    Step 1: Choose your target slab. Gold has the best players, but everyone wants them!
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700 focus-within:border-blue-500 transition-colors">
-                                            <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Player Digits</label>
+                                        <div className={`bg-slate-900/80 p-4 rounded-xl border border-slate-700 transition-all ${isTutorialMode && tutorialStep === 1 ? 'z-50 relative ring-4 ring-amber-500 scale-105 bg-slate-800' : ''}`}>
+                                            <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Player Digits (1-20)</label>
                                             <input 
                                                 type="number" 
                                                 min="1"
                                                 className="w-full bg-transparent text-white font-mono font-bold text-xl outline-none"
                                                 value={selectedNumber}
-                                                onChange={(e) => setSelectedNumber(e.target.value)}
+                                                onChange={(e) => {
+                                                    setSelectedNumber(e.target.value);
+                                                    if (isTutorialMode && tutorialStep === 1 && e.target.value.length > 0) setTutorialStep(2);
+                                                }}
                                             />
+                                            {isTutorialMode && tutorialStep === 1 && (
+                                                <div className="absolute top-full mt-4 left-0 w-[250px] bg-amber-500 text-slate-900 p-4 rounded-xl shadow-2xl font-bold animate-bounce z-50">
+                                                    <div className="absolute -top-2 left-6 w-4 h-4 bg-amber-500 rotate-45"></div>
+                                                    Step 2: Enter a secret number to establish priority!
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                    <button 
-                                        onClick={submitPick}
-                                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 focus:ring-4 focus:ring-indigo-500/50 text-white font-black py-5 px-6 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:-translate-y-1 transition-all uppercase tracking-widest text-xl group"
-                                    >
-                                        Transmit Pick
-                                    </button>
+                                    <div className={`relative ${isTutorialMode && tutorialStep === 2 ? 'z-50' : ''}`}>
+                                        <button 
+                                            onClick={submitPick}
+                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 focus:ring-4 focus:ring-indigo-500/50 text-white font-black py-5 px-6 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:-translate-y-1 transition-all uppercase tracking-widest text-xl group"
+                                        >
+                                            Transmit Pick
+                                        </button>
+                                        {isTutorialMode && tutorialStep === 2 && (
+                                                <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-[250px] bg-amber-500 text-slate-900 p-4 rounded-xl shadow-2xl font-bold animate-bounce z-50">
+                                                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-amber-500 rotate-45"></div>
+                                                    Step 3: Transmit! The backend is waiting indefinitely for you.
+                                                </div>
+                                        )}
+                                    </div>
                                 </>
                             )}
 
                             {/* Auction Request Phase (Top Priority or Matching Bid) */}
                             {auctionRequest && (
-                                <div className="bg-slate-900/90 border border-blue-500/50 p-6 rounded-2xl shadow-2xl pulse-border slide-up text-center">
+                                <div className={`bg-slate-900/90 border border-blue-500/50 p-6 rounded-2xl shadow-2xl pulse-border slide-up text-center relative ${isTutorialMode && tutorialStep >= 3 ? 'z-50 ring-4 ring-amber-500' : ''}`}>
+                                    {isTutorialMode && tutorialStep >= 3 && (
+                                        <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 w-[300px] bg-amber-500 text-slate-900 p-4 rounded-xl shadow-2xl font-bold animate-bounce z-50">
+                                            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-amber-500 rotate-45"></div>
+                                            Step 4: The Auction resolves! You must now either Reject the player or Accept/Match Bid! Look at the Terminal logs to see what happened.
+                                        </div>
+                                    )}
                                     <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded inline-block mb-3 uppercase tracking-widest animate-pulse">Action Required</span>
                                     <h4 className="text-xl font-bold text-white mb-2">{auctionRequest.instructions}</h4>
                                     <p className="text-slate-400 mb-6 text-sm">Priority List Sequence</p>
@@ -271,20 +315,9 @@ export default function GameScreen() {
 
             </main>
 
-            {/* Interactive Tutorial Coach Overlay */}
-            {isTutorialMode && (
-                <div className="fixed bottom-12 right-12 z-50 drop-shadow-2xl fade-in slide-up hidden md:block">
-                    <div className="bg-slate-900/90 backdrop-blur-md p-6 border-2 border-amber-500 rounded-3xl max-w-sm relative shadow-[0_0_30px_rgba(245,158,11,0.2)]">
-                        <div className="absolute -top-8 -left-8 text-6xl drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">🤖</div>
-                        <h3 className="text-amber-400 font-black uppercase tracking-widest mb-3 pl-8 border-b border-amber-500/30 pb-2">Draft Coach</h3>
-                        <p className="text-white text-sm leading-relaxed font-medium">
-                            {!auctionRequest && !challengeRequest && "Welcome Rookie! Pick a priority slab (Higher tier players are rarer) and guess a secret number. The closer your number is to the server's random draw, the higher your priority! Hit Transmit."}
-                            {auctionRequest && !auctionRequest.currentBid && "Look at that! The server drew a player, and your number was closest! You can Accept them for free. (If you reject 3 times consecutively, the server forces you to pick!)"}
-                            {auctionRequest && auctionRequest.currentBid > 0 && "High stakes! An opponent wants this player and placed a Challenge Bid! You must either Match the bid to keep them, or Reject and save your purse."}
-                            {challengeRequest && "An opponent had higher priority and accepted this player for free. You have one chance to steal them by submitting a Challenge Bid!"}
-                        </p>
-                    </div>
-                </div>
+            {/* Dark Spotlight Backdrop over entire screen */}
+            {isTutorialMode && tutorialStep < 5 && (
+                <div className="fixed inset-0 bg-slate-950/80 z-40 backdrop-blur-sm transition-all duration-500 pointer-events-none"></div>
             )}
         </div>
     );

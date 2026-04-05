@@ -20,6 +20,7 @@ interface GameState {
     draftPool: any[];
     
     turnState: 'WAITING_FOR_PICKS' | 'AUCTION_DECISION' | 'ROUND_END';
+    auctionQueue: string[];
     
     // Pick Collection
     currentPicks: Record<string, Pick>;
@@ -62,6 +63,7 @@ export class GameEngine {
             draftPool: game.draftPool,
             turnState: 'WAITING_FOR_PICKS',
             currentPicks: {},
+            auctionQueue: [],
             rejectionCounters
         };
 
@@ -95,8 +97,13 @@ export class GameEngine {
             timerMs: 15000 
         });
         
-        // Auto-process after 15s (grace period)
-        setTimeout(() => this.processPicks(gameKey), 16000);
+        const humanTeamsInLoc = state.teams.filter((t: any) => !t.isCPU && t.section === state.currentSection);
+        const totalHumans = state.teams.filter((t: any) => !t.isCPU).length;
+        
+        // Auto-process after 15s ONLY if there's more than 1 human (PvP). In Single Player, give the human infinite time!
+        if (totalHumans > 1 || humanTeamsInLoc.length === 0) {
+            setTimeout(() => this.processPicks(gameKey), 16000);
+        }
     }
 
     public registerPick(gameKey: string, teamId: string, slab: string, number: number) {
@@ -122,25 +129,31 @@ export class GameEngine {
         
         const picks = Object.values(state.currentPicks);
         if (picks.length === 0) {
-            // No one picked anything. End round.
             return this.endRound(gameKey);
         }
 
-        // Slab Priority: Gold > Silver > Bronze
+        const activeSlabs = Array.from(new Set(picks.map(p => p.slab)));
         const slabOrder = ['Gold', 'Silver', 'Bronze'];
-        let highestSlab = 'Bronze';
+        state.auctionQueue = slabOrder.filter(s => activeSlabs.includes(s));
         
-        for (const s of slabOrder) {
-            if (picks.some(p => p.slab === s)) {
-                highestSlab = s;
-                break;
-            }
+        this.processNextSlab(gameKey);
+    }
+
+    private processNextSlab(gameKey: string): void {
+        const state = activeGames[gameKey];
+        if (!state) return;
+
+        if (!state.auctionQueue || state.auctionQueue.length === 0) {
+            return this.endRound(gameKey);
         }
 
-        const validPicks = picks.filter(p => p.slab === highestSlab);
-        const slabPlayers = state.draftPool.filter((p: any) => p.slab === highestSlab && !p.teamId);
+        const currentSlab = state.auctionQueue.shift()!;
         
-        if (slabPlayers.length === 0) return this.endRound(gameKey);
+        const picks = Object.values(state.currentPicks);
+        const validPicks = picks.filter(p => p.slab === currentSlab);
+        const slabPlayers = state.draftPool.filter((p: any) => p.slab === currentSlab && !p.teamId);
+        
+        if (slabPlayers.length === 0) return this.processNextSlab(gameKey);
 
         // SECURE RANDOM NUMBER GENERATION (PRD 3.2.3)
         const randgen = crypto.randomInt(1, slabPlayers.length + 1);
@@ -153,7 +166,7 @@ export class GameEngine {
              if (winner) {
                  this.allocatePlayer(gameKey, winner.teamId, selectedPlayer.id, 0, "Exact Match");
              }
-             return this.endRound(gameKey);
+             return this.processNextSlab(gameKey);
         }
 
         // Priority List Logic (PRD 3.2.3)
@@ -179,12 +192,12 @@ export class GameEngine {
 
         const ad = state.auctionDetails;
         if (ad.currentPriorityIndex >= ad.priorityList.length) {
-             // Everyone passed, end round
-             return this.endRound(gameKey);
+             // Everyone passed, proceed to next active slab in the queue
+             return this.processNextSlab(gameKey);
         }
 
         const activeTeamId = ad.priorityList[ad.currentPriorityIndex];
-        if (!activeTeamId) return this.endRound(gameKey);
+        if (!activeTeamId) return this.processNextSlab(gameKey);
         
         const teamObj = state.teams.find((t: any) => t.id === activeTeamId);
         
@@ -232,7 +245,7 @@ export class GameEngine {
         if (ad.latestBidder) {
              // Team is matching a challenge bid
              this.allocatePlayer(gameKey, teamId, ad.targetPlayer.id, ad.currentBid, "Matched Bid");
-             return this.endRound(gameKey);
+             return this.processNextSlab(gameKey);
         } else {
              // Free Accept phase. Now we must ask next priority teams if they want to challenge!
              const challengers = ad.priorityList.slice(ad.currentPriorityIndex + 1);
@@ -254,7 +267,7 @@ export class GameEngine {
                  }
              } else {
                  this.allocatePlayer(gameKey, teamId, ad.targetPlayer.id, 0, isForced ? "Forced Pick" : "Accepted Free");
-                 return this.endRound(gameKey);
+                 return this.processNextSlab(gameKey);
              }
         }
     }
@@ -281,7 +294,7 @@ export class GameEngine {
              // Team rejected matching the challenge bid. So the challenger wins.
              const winnerId = ad.latestBidder;
              this.allocatePlayer(gameKey, winnerId, ad.targetPlayer.id, ad.currentBid, "Won Challenge");
-             return this.endRound(gameKey);
+             return this.processNextSlab(gameKey);
         } else {
              // Free Accept rejected.
              if (state.rejectionCounters[teamId] === undefined) {
